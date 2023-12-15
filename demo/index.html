@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      html,
+      body,
+      iframe {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <p>父亲</p>
+    <p id="opt"></p>
+    <button class="b" id="b">点击</button>
+    <iframe src="" id="child"></iframe>
+    <script type="module">
+      import { Iframe } from '../Iframe.js';
+      var opt = document.getElementById('opt');
+      var ob = document.getElementById('b');
+      var count = 0;
+
+      // create iframe
+      const iframe = new Iframe({
+        container: document.getElementById('child'),
+        url: 'http://127.0.0.1:5501/demo/child.html' + window.location.search,
+        whiteList: ['http://127.0.0.1:5501'], // add white list
+      });
+      console.log(iframe);
+      // receive messages callback
+      iframe.message = (e) => {
+        console.log('index接收到默认消息', e);
+        const { source, data } = e;
+        opt.innerText = data.msg;
+      };
+
+      iframe.action('handel', (e) => {
+        console.log('index接收到自定义消息', e);
+      });
+
+      ob.onclick = function () {
+        count++;
+        // 发送自定义消息
+        iframe.emit('handel', { msg: 'hello child' + count });
+        // message 消息
+        iframe.sendMessage({ msg: 'hello child' + count });
+      };
+    </script>
+  </body>
+</html>

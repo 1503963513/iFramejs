@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <p>儿子</p>
+    <p id="opt"></p>
+    <button class="b" id="b">点击</button>
+    <script type="module">
+      import { Iframe } from '../Iframe.js';
+      var opt = document.getElementById('opt');
+      var ob = document.getElementById('b');
+      var count = 0;
+
+      // create iframe, Name = game1
+      const parent = new Iframe('game1');
+      // add white list
+      parent.addWhiteList('http://127.0.0.1:5501');
+
+      // iframe onload
+      parent.action('onload', () => {
+        console.log('load');
+      });
+
+      // receive messages callback
+      parent.message = (data) => {
+        console.log('child接收普通消息', data);
+        const { msg } = data.data;
+        opt.innerText = msg;
+      };
+
+      // 绑定自定义消息事件
+      parent.action('handel', (e) => {
+        console.log('child接收到自定义消息', e);
+      });
+
+      // click event sendMessage
+      ob.onclick = function () {
+        count++;
+        // 发送自定义消息
+        parent.emit('handel', { msg: 'hello parent' + count });
+        // 发送默认消息
+        parent.sendMessage({ msg: 'hello parent' + count });
+      };
+    </script>
+  </body>
+</html>
