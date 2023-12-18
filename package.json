@@ -1,14 +1,16 @@
 {
   "name": "iframe-js",
-  "version": "1.0.0",
-  "description": "Post-message-Iframe： 解决 IFrame 通信；优雅使用 PostMessage",
+  "version": "1.0.1",
+  "description": "Post-message-Iframe： 解决 IFrame 通信；优雅的使用 PostMessage",
   "repository": "https://github.com/1503963513/iFramejs",
   "main": "Iframe.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "iframe"
+    "iframe",
+    "js",
+    "es6"
   ],
   "author": "",
   "license": "ISC"

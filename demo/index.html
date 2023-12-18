@@ -12,7 +12,6 @@
         height: 100%;
         padding: 0;
         margin: 0;
-        border: 0;
         overflow: hidden;
       }
     </style>
@@ -20,7 +19,7 @@
   <body>
     <p>父亲</p>
     <p id="opt"></p>
-    <button class="b" id="b">点击</button>
+    <button class="b" id="b">click</button>
     <iframe src="" id="child"></iframe>
     <script type="module">
       import { Iframe } from '../Iframe.js';
@@ -37,20 +36,19 @@
       console.log(iframe);
       // receive messages callback
       iframe.message = (e) => {
-        console.log('index接收到默认消息', e);
+        console.log('indexReceived default message', e);
         const { source, data } = e;
         opt.innerText = data.msg;
       };
 
+      // Bind custom message events
       iframe.action('handel', (e) => {
-        console.log('index接收到自定义消息', e);
+        console.log('index Received custom message', e);
       });
 
       ob.onclick = function () {
         count++;
-        // 发送自定义消息
         iframe.emit('handel', { msg: 'hello child' + count });
-        // message 消息
         iframe.sendMessage({ msg: 'hello child' + count });
       };
     </script>

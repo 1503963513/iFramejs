@@ -1,15 +1,10 @@
 function isFunction(obj) {
   return typeof obj === 'function';
 }
+var eventHead = 'postHead_';
 class Iframe {
   constructor(options) {
     this.Whitelist = [];
-    Object.defineProperty(this, 'eventHead', {
-      value: 'postHead_',
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    });
     switch (true) {
       case !!options?.container:
         const { container, url, whiteList } = options;
@@ -152,8 +147,8 @@ class Iframe {
     });
   }
   sendEmitEventParent(event, payload = {}) {
-    if (this.iframe[this.eventHead + event]) {
-      this.iframe[this.eventHead + event]({
+    if (this.iframe[eventHead + event]) {
+      this.iframe[eventHead + event]({
         source: this.name,
         data: payload,
       });
@@ -172,8 +167,8 @@ class Iframe {
     });
   }
   sendEmitEventChild(event, payload = {}) {
-    if (window.parent[this.eventHead + event]) {
-      window.parent[this.eventHead + event]({
+    if (window.parent[eventHead + event]) {
+      window.parent[eventHead + event]({
         source: this.name,
         data: payload,
       });
@@ -190,7 +185,7 @@ class Iframe {
     if (name === 'postMessage') return console.log(name + 'Error：eventName');
     if (arguments.length !== 2)
       return console.log('Error： Please provide name and callback ');
-    window[this.eventHead + name] = fun;
+    window[eventHead + name] = fun;
   }
   /**
    * Blocking console.logs
