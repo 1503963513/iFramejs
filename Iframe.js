@@ -1,31 +1,11 @@
-/**
- * 优点：
- * 代码模块化：使用iframe可以将一个网页划分为多个模块，每个模块单独编写HTML文档，使代码更加模块化和易于维护。
- * 跨域通信：由于浏览器的同源策略，一个网页无法直接访问另一个域名下的内容。但是，使用iframe可以在同一个页面中加载不同域名下的内容，从而实现跨域通信。
- * 独立性：iframe中的文档是独立的，它的样式和JavaScript代码不会影响到外层文档的样式和JavaScript代码。
- * 缺点：
- * 降低性能：每个iframe都需要单独加载和渲染，这会导致网页的加载速度变慢，降低性能。
- * SEO问题：iframe中的内容不会被搜索引擎抓取和索引，这会对网页的SEO产生影响。
- * 安全问题：iframe中的文档可以在外层文档中执行脚本，这可能导致安全问题。
- * 兼容性：
- * Iframe的支持性
- * IE7； 2001
- * safari3.2； 2006
- * firefox 2.0； 2006
- * 其余都兼容， 目前浏览器完全兼容
- * 支持发送file，fileList对象
- * Firefox 6 之前message必须是字符串
- * IE10经过了解有一个问题： https://stackoverflow.com/questions/16226924/is-cross-origin-postmessage-broken-in-ie10
- */
 function isFunction(obj) {
   return typeof obj === 'function';
 }
 class Iframe {
   constructor(options) {
-    this.Whitelist = []; // 白名单
-    // this.eventHead = 'postHead_'; // event头
+    this.Whitelist = [];
     Object.defineProperty(this, 'eventHead', {
-      value: 'postHead_', // event头
+      value: 'postHead_',
       writable: false,
       enumerable: false,
       configurable: false,
@@ -54,15 +34,13 @@ class Iframe {
         this.childInit();
         this.name = options;
         console.warn(
-          '将目标网址的X-Frame-0ptions设置为 ALLOW-FROM uri：表示页面只能被指定uri的iframe嵌入。'
+          'Set the X-Frame-0ptions of the target URL to ALLOW-FROM uri: This means that the page can only be embedded in iframes with the specified uri.'
         );
         break;
       default:
         console.warn(iframe + 'none');
         break;
     }
-    // 检测器
-    this.whetherEembed();
   }
   whetherEembed() {
     return window.self !== window.top || window.frameElement !== null;
