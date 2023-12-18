@@ -33,7 +33,7 @@ class Iframe {
         );
         break;
       default:
-        console.warn(iframe + 'none');
+        console.warn('iframe none');
         break;
     }
   }
