@@ -4,6 +4,31 @@ Post-message-Iframe： 解决 IFrame 通信；优雅使用 PostMessage
 
 > 大小仅2kb
 
+
+
+Vue:
+
+```vue
+<script setup>
+import { onMounted, ref } from 'vue';
+import { Iframe } from 'iframe-js';
+const iframeRef = ref(null);
+onMounted(() => {
+  const iframe = new Iframe({
+    container: iframeRef.value,
+    url: '...',
+    whiteList: ['https://www.baidu.com'], // add white list
+  });
+});
+</script>
+
+<template>
+  <div class="app_container">
+    <iframe class="iframe" ref="iframeRef"></iframe>
+  </div>
+</template>
+```
+
 ## start
 
 - parent.html
