@@ -1,6 +1,6 @@
 {
   "name": "iframe-js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Post-message-Iframe： 解决 IFrame 通信；优雅的使用 PostMessage",
   "repository": "https://github.com/1503963513/iFramejs",
   "main": "Iframe.js",
