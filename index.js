@@ -1,7 +1,42 @@
-function isFunction(obj) {
+'use strict';
+
+var eventHead = 'postHead_';
+var customMap = new Map();
+export function isFunction(obj) {
   return typeof obj === 'function';
 }
-var eventHead = 'postHead_';
+function isSameDomain(url1, url2) {
+  const a = document.createElement('a');
+  a.href = url1;
+  const b = document.createElement('a');
+  b.href = url2;
+
+  return (
+    a.hostname === b.hostname && a.port === b.port && a.protocol === b.protocol
+  );
+}
+function targetSend(target, name, payload, options) {
+  switch (options.type) {
+    case 0:
+      target.postMessage(
+        {
+          source: 'Iframe-Child-Screen' + name,
+          data: payload,
+        },
+        options.origin || '*'
+      );
+      break;
+    case 1:
+      target.postMessage(
+        {
+          source: 'Iframe-Child-Screen' + name,
+          action: eventHead + options.event,
+          data: payload,
+        },
+        options.origin || '*'
+      );
+  }
+}
 class Iframe {
   constructor(options) {
     this.Whitelist = [];
@@ -16,6 +51,8 @@ class Iframe {
         container.onload = this.onload();
         this.iframeInit();
         this.name = 'default';
+        this.url = url;
+        this.postOrigin = url;
         break;
       case options?.nodeName === 'IFRAME':
         // : HTMLIFrameElement
@@ -31,6 +68,8 @@ class Iframe {
         console.warn(
           'Set the X-Frame-0ptions of the target URL to ALLOW-FROM uri: This means that the page can only be embedded in iframes with the specified uri.'
         );
+        this.url = location.ancestorOrigins[0];
+        this.postOrigin = location.ancestorOrigins[0];
         break;
       default:
         console.warn('iframe none');
@@ -46,23 +85,7 @@ class Iframe {
   iframeInit() {
     this.sendMessage = this.sendMessageParent;
     this.emit = this.sendEmitEventParent;
-    window.addEventListener(
-      'message',
-      (e) => {
-        if (
-          e.data.source?.includes('Iframe-Child-Screen') &&
-          this.Whitelist.some((a) => e.origin.includes(a))
-        ) {
-          if (this.message) {
-            this.message({
-              data: e.data.data,
-              source: e.data.source.replace('Iframe-Child-Screen', ''),
-            });
-          }
-        }
-      },
-      false
-    );
+    this.openEventListener();
   }
   /**
    * onload sendMessage
@@ -71,6 +94,10 @@ class Iframe {
     // console.log(location.ancestorOrigins);
     this.sendMessage = this.sendMessageChild;
     this.emit = this.sendEmitEventChild;
+    this.iframe = window.parent;
+    this.openEventListener();
+  }
+  openEventListener() {
     window.addEventListener(
       'message',
       (e) => {
@@ -78,11 +105,16 @@ class Iframe {
           e.data.source?.includes('Iframe-Child-Screen') &&
           this.Whitelist.some((a) => e.origin.includes(a))
         ) {
+          let val = {
+            data: e.data.data,
+            source: e.data.source.replace('Iframe-Child-Screen', ''),
+          };
+          if (e.data?.action) {
+            customMap.get(e.data.action)(val);
+            return;
+          }
           if (this.message) {
-            this.message({
-              data: e.data.data,
-              source: e.data.source.replace('Iframe-Child-Screen', ''),
-            });
+            this.message(val);
           }
         }
       },
@@ -102,7 +134,7 @@ class Iframe {
    */
   addWhiteList(url) {
     if (Array.isArray(url)) {
-      this.Whitelist = [...this.Whitelist, url];
+      this.Whitelist = [...this.Whitelist, ...url];
     } else {
       url && this.Whitelist.push(url);
     }
@@ -140,40 +172,62 @@ class Iframe {
    * @param {*} event eventName
    * @param {*} msg data
    */
-  sendMessageParent(payload) {
-    this.iframe.postMessage({
-      source: 'Iframe-Child-Screen' + this.name,
-      data: payload,
-    });
+  sendMessageParent(payload, options) {
+    targetSend(
+      this.iframe,
+      this.name,
+      payload,
+      options || { type: 0, origin: this.postOrigin }
+    );
   }
   sendEmitEventParent(event, payload = {}) {
-    if (this.iframe[eventHead + event]) {
-      this.iframe[eventHead + event]({
-        source: this.name,
-        data: payload,
-      });
+    // If the iframe and main document are not in the same domain (due to cross domain security policies), it is impossible.
+    // To bypass this restriction, cross domain messaging can be used.
+    if (isSameDomain(window.location.href, this.url)) {
+      if (this.iframe[eventHead + event]) {
+        this.iframe[eventHead + event]({
+          source: this.name,
+          data: payload,
+        });
+      } else {
+        console.warn('event not Function');
+      }
     } else {
-      console.warn('event not Function');
+      this.sendMessageParent(payload, {
+        type: 1,
+        event: event,
+        origin: this.postOrigin,
+      });
     }
   }
   /**
    *send Message, send Parent
    * @param {*} data
    */
-  sendMessageChild(payload = {}) {
-    window.parent.postMessage({
-      source: 'Iframe-Child-Screen' + this.name,
-      data: payload,
-    });
+  sendMessageChild(payload = {}, options) {
+    targetSend(
+      window.parent,
+      this.name,
+      payload,
+      options || { type: 0, origin: this.postOrigin }
+    );
   }
   sendEmitEventChild(event, payload = {}) {
-    if (window.parent[eventHead + event]) {
-      window.parent[eventHead + event]({
-        source: this.name,
-        data: payload,
-      });
+    if (isSameDomain(window.location.href, this.url)) {
+      if (window.parent[eventHead + event]) {
+        window.parent[eventHead + event]({
+          source: this.name,
+          data: payload,
+        });
+      } else {
+        console.warn('event not Function');
+      }
     } else {
-      console.warn('event not Function');
+      this.sendMessageChild(payload, {
+        type: 1,
+        event: event,
+        origin: this.postOrigin,
+      });
     }
   }
   /**
@@ -185,7 +239,11 @@ class Iframe {
     if (name === 'postMessage') return console.log(name + 'Error：eventName');
     if (arguments.length !== 2)
       return console.log('Error： Please provide name and callback ');
-    window[eventHead + name] = fun;
+    if (isSameDomain(window.location.href, this.url)) {
+      window[eventHead + name] = fun;
+    } else {
+      customMap.set(eventHead + name, fun);
+    }
   }
   /**
    * Blocking console.logs

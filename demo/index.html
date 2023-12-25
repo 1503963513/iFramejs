@@ -22,7 +22,7 @@
     <button class="b" id="b">click</button>
     <iframe src="" id="child"></iframe>
     <script type="module">
-      import { Iframe } from '../Iframe.js';
+      import { Iframe } from '../index.js';
       var opt = document.getElementById('opt');
       var ob = document.getElementById('b');
       var count = 0;
@@ -30,26 +30,26 @@
       // create iframe
       const iframe = new Iframe({
         container: document.getElementById('child'),
-        url: 'http://127.0.0.1:5501/demo/child.html' + window.location.search,
-        whiteList: ['http://127.0.0.1:5501'], // add white list
+        url: 'https://www.zhuoson.com/demo/iframe/demo/child.html',
+        whiteList: ['http://127.0.0.1:5501', 'https://www.zhuoson.com'], // add white list
       });
-      console.log(iframe);
+
       // receive messages callback
       iframe.message = (e) => {
-        console.log('indexReceived default message', e);
+        console.log('index  Received default message', e);
         const { source, data } = e;
         opt.innerText = data.msg;
       };
 
       // Bind custom message events
       iframe.action('handel', (e) => {
-        console.log('index Received custom message', e);
+        console.log('index  Received custom message', e);
       });
 
       ob.onclick = function () {
         count++;
-        iframe.emit('handel', { msg: 'hello child' + count });
         iframe.sendMessage({ msg: 'hello child' + count });
+        iframe.emit('handel', { msg: 'hello child' + count });
       };
     </script>
   </body>

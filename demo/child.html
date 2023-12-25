@@ -10,7 +10,7 @@
     <p id="opt"></p>
     <button class="b" id="b">click</button>
     <script type="module">
-      import { Iframe } from '../Iframe.js';
+      import { Iframe } from '../index.js';
       var opt = document.getElementById('opt');
       var ob = document.getElementById('b');
       var count = 0;
@@ -18,17 +18,16 @@
       // create iframe, Name = game1
       const parent = new Iframe('game1');
       // add white list
-      parent.addWhiteList('http://127.0.0.1:5501');
-
+      parent.addWhiteList(['http://127.0.0.1:5501', 'https://www.zhuoson.com']);
       // iframe onload
       parent.action('onload', () => {
         console.log('load');
       });
 
       // receive messages callback
-      parent.message = (data) => {
-        console.log('child  Received default message', data);
-        const { msg } = data.data;
+      parent.message = (e) => {
+        const { msg } = e.data;
+        console.log('child  Received default message', e);
         opt.innerText = msg;
       };
 
@@ -40,8 +39,8 @@
       // click event sendMessage
       ob.onclick = function () {
         count++;
-        parent.emit('handel', { msg: 'hello parent' + count });
         parent.sendMessage({ msg: 'hello parent' + count });
+        parent.emit('handel', { msg: 'hello parent' + count });
       };
     </script>
   </body>

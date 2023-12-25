@@ -73,7 +73,7 @@ var count = 0;
 // create IframeName, Name = game1
 const parent = new Iframe('game1');
 // add white list
-parent.addWhiteList('http://127.0.0.1:5501');
+parent.addWhiteList(['http://127.0.0.1:5501']);
 
 // iframe onload
 parent.action('onload', () => {
@@ -101,3 +101,26 @@ dom.onclick = function () {
   parent.sendMessage({ msg: 'hello parent' + count });
 };
 ```
+
+## API
+
+`sendMessage`: 发送
+
+`message`： 接收
+
+`postOrigin` ：消息发送对方窗口的 origin,  默认为` url || window.ancestorOrigins`
+
+`action`:  自定义事件
+
+`emit`： 调用自定义事件
+
+`Whitelis`： 白名单 <Array>
+
+
+
+## method
+
+`onload`:  iframe加载完成
+
+`updateWhite`、`addWhiteList`、`removeWhiteList` 更新、加入、 删除新白名单
+
