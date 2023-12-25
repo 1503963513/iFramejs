@@ -6,6 +6,12 @@ Post-message-Iframe： 解决 IFrame 通信；优雅使用 PostMessage
 
 
 
+cdn:
+
+```sh
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v1.0.0/index.min.js
+```
+
 Vue:
 
 ```vue

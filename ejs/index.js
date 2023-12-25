@@ -248,3 +248,4 @@ class Iframe {
   }
 }
 
+export { Iframe };
