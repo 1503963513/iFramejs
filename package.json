@@ -10,7 +10,9 @@
   "keywords": [
     "iframe",
     "js",
-    "es6"
+    "es6",
+    "postMessage",
+    "通信"
   ],
   "author": "zhuo",
   "license": "ISC"
