@@ -1,10 +1,5 @@
-# Post-message-Iframe
-
-Post-message-Iframe： 解决 IFrame 通信；优雅使用 PostMessage
-
-> 大小仅2kb
-
-
+# iframe-js
+iframe-js： 解决 IFrame 通信；优雅使用 PostMessage
 
 cdn:
 
