@@ -1,19 +1,33 @@
 {
   "name": "iframe-js",
-  "version": "1.0.8",
-  "description": "iframe-js： 解决 IFrame 通信；优雅的使用 PostMessage",
-  "repository": "https://github.com/1503963513/iFramejs",
+  "version": "2.0.0",
+  "description": "轻量、安全、优雅的跨域 iframe 通信库。支持 Promise ACK 双向确认、消息队列与多实例完全隔离。",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1503963513/iFramejs.git"
+  },
   "main": "ejs/index.js",
+  "module": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "iframe",
-    "js",
-    "es6",
     "postMessage",
+    "cross-origin",
+    "micro-frontend",
+    "promise",
+    "ack",
+    "eventbus",
+    "vue",
+    "react",
     "通信"
   ],
   "author": "zhuo",
-  "license": "ISC"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/1503963513/iFramejs/issues"
+  },
+  "homepage": "https://github.com/1503963513/iFramejs#readme"
 }
