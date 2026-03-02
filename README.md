@@ -10,7 +10,7 @@
 - **内部消息队列**：无惧 iframe 尚未加载完成，未就绪的消息将自动进入队列，等待 `onload` 后自动发送。
 - **完全隔离的多实例**：完美支持在同一页面中嵌入多个独立 iframe，状态互不干扰。
 
-------
+---
 
 ## 📦 安装与引入
 
@@ -27,9 +27,9 @@ npm i iframe-js
 适用于传统原生 HTML 项目：
 
 ```sh
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v1.0.7/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.0.0/index.min.js
 
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v1.0.7/ejs/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.0.0/ejs/index.min.js
 ```
 
 ## 🚀 快速开始
@@ -75,7 +75,7 @@ import { Iframe } from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.0.0/e
 const iframe = new Iframe({
   container: document.getElementById('child'),
   url: 'http://127.0.0.1:5501/child.html' + window.location.search,
-  whiteList: ['http://127.0.0.1:5501'], 
+  whiteList: ['http://127.0.0.1:5501'],
   timeout: 5000 // 默认 ACK 超时时间
 });
 
@@ -137,7 +137,7 @@ document.getElementById('btn').onclick = function () {
 };
 ```
 
-------
+---
 
 ## 📖 API Reference
 
@@ -168,17 +168,17 @@ document.getElementById('btn').onclick = function () {
 
 - `getEmbedStatus()`: 获取当前页面的嵌入状态环境，返回以下对象：
 
-  JavaScript
+    JavaScript
 
-  ```
-  {
-    isEmbedded: boolean,      // 是否被内嵌在 iframe 中
-    canCommunicate: boolean,  // 当前环境是否能够使用 postMessage 通信
-    hasParent: boolean,       // 是否存在父窗口
-    hasFrameElement: boolean, // 是否存在同源的 frameElement 引用
-    isTopWindow: boolean      // 当前是否为浏览器顶层窗口
-  }
-  ```
+    ```
+    {
+      isEmbedded: boolean,      // 是否被内嵌在 iframe 中
+      canCommunicate: boolean,  // 当前环境是否能够使用 postMessage 通信
+      hasParent: boolean,       // 是否存在父窗口
+      hasFrameElement: boolean, // 是否存在同源的 frameElement 引用
+      isTopWindow: boolean      // 当前是否为浏览器顶层窗口
+    }
+    ```
 
 - `destroy()`: 彻底销毁实例，清理所有事件监听器、消息队列和内存占用（推荐在前端组件卸载时调用）。
 
@@ -190,7 +190,7 @@ document.getElementById('btn').onclick = function () {
 - `removeWhiteList(url | url[])`: 移除白名单 Origin。
 - `updateWhite(oldUrl, newUrl)`: 更新指定的白名单记录。
 
-------
+---
 
 ## 💡 进阶使用示例
 
@@ -221,10 +221,10 @@ document.getElementById('payBtn').onclick = async () => {
   if (!parent.isReady()) return console.error('通信未就绪');
 
   console.log('发起请求，等待对方确认...');
-  
+
   // 触发父页面的 'requestPayment' 事件，设定超时 8000ms
   const isConfirmed = await parent.emitToParentWithAck('requestPayment', { amount: 100 }, 8000);
-  
+
   if (isConfirmed) {
     console.log('✅ 对方已收到并确认请求！');
   } else {
