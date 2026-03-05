@@ -1,15 +1,22 @@
 {
   "name": "iframe-js",
-  "version": "2.1.1",
+  "version": "2.1.3",
   "description": "轻量、安全、优雅的跨域 iframe 通信库。支持 Promise ACK 双向确认、消息队列与多实例完全隔离。",
+  "type": "module",
+  "main": "ejs/index.js",
+  "module": "ejs/index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./ejs/index.js",
+      "require": "./ejs/index.js",
+      "types": "./index.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/1503963513/iFramejs.git"
   },
-  "type": "module",
-  "main": "ejs/index.js",
-  "module": "index.js",
-  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,9 +33,5 @@
     "通信"
   ],
   "author": "zhuo",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/1503963513/iFramejs/issues"
-  },
-  "homepage": "https://github.com/1503963513/iFramejs#readme"
+  "license": "MIT"
 }

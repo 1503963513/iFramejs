@@ -1,7 +1,7 @@
 const EVENT_HEAD_PREFIX = 'postHead_';
 const ACK_HEAD_PREFIX = 'ackHead_';
 
-export class IframeUtils {
+class IframeUtils {
     static isSameDomain(url1, url2) {
         if (!url1 || !url2 || url1 === '*' || url2 === '*') return false;
         try {
@@ -33,7 +33,7 @@ export class IframeUtils {
     }
 }
 
-export default class Iframe {
+class Iframe {
     constructor(options) {
         this._defaultTimeout = options?.timeout || 5000;
 
@@ -573,3 +573,6 @@ export default class Iframe {
         console.log = function () {};
     }
 }
+
+export { IframeUtils, Iframe };
+export default Iframe;
