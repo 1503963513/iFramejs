@@ -31,15 +31,10 @@ export interface EmbedStatus {
  * 父页面初始化配置项
  */
 export interface ParentIframeOptions {
-    /** iframe DOM 节点 */
     container: HTMLIFrameElement;
-    /** 目标 iframe 的完整 URL */
     url: string;
-    /** 允许通信的 Origin 白名单 */
     whiteList?: string | string[];
-    /** 实例唯一命名（可选，不传会自动生成） */
     name?: string;
-    /** 全局 ACK 默认超时时间 (毫秒)，默认 5000 */
     timeout?: number;
 }
 
@@ -47,145 +42,100 @@ export interface ParentIframeOptions {
  * 子页面初始化配置项
  */
 export interface ChildIframeOptions {
-    /** 实例唯一命名标识 */
     name: string;
-    /** 全局 ACK 默认超时时间 (毫秒)，默认 5000 */
     timeout?: number;
 }
 
 /**
- * IframeUtils 工具类
+ * 自动高度同步配置项
  */
+export interface AutoResizerConfig {
+    /** 监听的目标节点选择器，默认为 'body' */
+    target?: string;
+    /** 额外的高度补偿值 (px) */
+    offset?: number;
+}
+
 export declare class IframeUtils {
-    /** 判断两个URL是否同域 */
     static isSameDomain(url1: string, url2: string): boolean;
-    /** 解析URL获取origin */
     static getOrigin(url: string): string | null;
-    /** 检测当前页面是否被内嵌在 iframe 中 */
     static isEmbedded(): boolean;
 }
 
-/**
- * 核心 Iframe 通信类
- */
 export default class Iframe {
-    /**
-     * 构造函数
-     * @param options 父级配置对象，或子级配置对象，或直接传入子级命名字符串
-     */
     constructor(options: ParentIframeOptions | ChildIframeOptions | string | HTMLIFrameElement);
 
-    /** 当前允许通信的白名单数组 */
     Whitelist: string[];
-    /** 消息发送对方窗口的 origin */
     postOrigin: string;
-
-    /**
-     * 属性：接收普通消息的回调函数
-     * @example iframe.message = (e) => { console.log(e.data) }
-     */
     message: ((e: IframeMessageEvent) => void) | null;
 
-    /**
-     * 检查通信是否就绪 (DOM是否加载完、白名单是否配置)
-     */
     isReady(): boolean;
-
-    /**
-     * 获取当前页面的嵌入状态环境
-     */
     getEmbedStatus(): EmbedStatus;
 
-    /**
-     * 动态添加信任的白名单 Origin
-     */
     addWhiteList(url: string | string[]): void;
-
-    /**
-     * 移除白名单 Origin
-     */
     removeWhiteList(url: string | string[]): void;
-
-    /**
-     * 更新指定的白名单记录
-     */
     updateWhite(oldUrl: string, newUrl: string): void;
-
-    /**
-     * 获取当前的白名单数组
-     */
     getWhiteList(): string[];
 
-    /**
-     * 监听/绑定自定义事件
-     * @param name 事件名称
-     * @param callback 回调函数
-     */
     action<T = any>(name: string, callback: (e: IframeActionEvent<T>) => void): void;
-
-    /**
-     * 移除已绑定的自定义事件监听器
-     * @param name 事件名称
-     */
     removeAction(name: string): void;
-
-    /**
-     * 触发目标的自定义事件
-     * @param event 事件名称
-     * @param payload 附带数据
-     * @returns 是否触发成功
-     */
     emit(event: string, payload?: any): boolean;
-
-    /**
-     * 发送普通消息
-     * @param payload 消息内容
-     * @param options 发送选项
-     * @returns 成功返回消息ID，失败返回 false
-     */
     sendMessage(payload: any, options?: { origin?: string; type?: number }): string | false;
 
     // ==========================================
     // ACK 确认机制 API (Promise)
     // ==========================================
-
-    /**
-     * 发送带确认的普通消息到子页面
-     * @param payload 消息内容
-     * @param timeout 超时时间(ms)，不传则使用默认配置
-     */
     sendMessageWithAckToChild(payload: any, timeout?: number): Promise<boolean>;
-
-    /**
-     * 发送带确认的自定义事件到子页面
-     * @param event 事件名称
-     * @param payload 附带数据
-     * @param timeout 超时时间(ms)
-     */
     emitToChildWithAck(event: string, payload?: any, timeout?: number): Promise<boolean>;
-
-    /**
-     * 发送带确认的普通消息到父页面
-     * @param payload 消息内容
-     * @param timeout 超时时间(ms)
-     */
     sendMessageParentWithAck(payload: any, timeout?: number): Promise<boolean>;
-
-    /**
-     * 发送带确认的自定义事件到父页面
-     * @param event 事件名称
-     * @param payload 附带数据
-     * @param timeout 超时时间(ms)
-     */
     emitToParentWithAck(event: string, payload?: any, timeout?: number): Promise<boolean>;
 
+    // ==========================================
+    // 高级特性: RPC 远程过程调用
+    // ==========================================
     /**
-     * 彻底销毁实例，清理所有事件监听器、消息队列和内存占用
+     * 暴露一个本地方法供远端调用
+     * @param methodName 方法名称
+     * @param handler 处理函数（支持返回 Promise 的异步函数）
      */
-    destroy(): void;
+    expose<T = any, R = any>(methodName: string, handler: (params: T, context?: { source: string }) => R | Promise<R>): void;
 
     /**
-     * 屏蔽组件内部的 console.log 日志
+     * 调用远端暴露的方法，并等待返回值
+     * @param methodName 远端方法名称
+     * @param params 传递给远端函数的参数
+     * @param timeout 超时时间(ms)
      */
+    callRemote<T = any, R = any>(methodName: string, params?: T, timeout?: number): Promise<R>;
+
+    // ==========================================
+    // 高级特性: 状态共享 (State Sync)
+    // ==========================================
+    /** 获取当前全量状态 */
+    getState<T = Record<string, any>>(): T;
+
+    /** 增量或全量更新状态，并自动同步给远端 */
+    setState<T = Record<string, any>>(partialState: Partial<T>): void;
+
+    /** 监听状态变化 */
+    onStateChange<T = Record<string, any>>(listener: (newState: T, oldState: T) => void): void;
+
+    /** 移除状态监听 */
+    offStateChange<T = Record<string, any>>(listener: (newState: T, oldState: T) => void): void;
+
+    // ==========================================
+    // 高级特性: 自动高度适应 (Auto Resize)
+    // ==========================================
+    /** (父页面专用) 开启自动接收并同步 iframe 高度 */
+    enableAutoResize(): void;
+
+    /** (子页面专用) 开启自动探测自身高度并上报给父页面 */
+    startAutoResizer(config?: AutoResizerConfig): void;
+
+    /** (子页面专用) 停止自动上报高度 */
+    stopAutoResizer(): void;
+
+    /** 彻底销毁实例，清理所有资源 */
+    destroy(): void;
     BlockingLog(): void;
 }

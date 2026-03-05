@@ -4,7 +4,11 @@
 
 ## 🎮 在线体验 (Live Demo)
 
-👉 **[点击这里体验完整功能演示 Demo](https://resource.zhuoson.com/demo/iframe-demo/index.html)**
+👉 **[点击这里体验：基础通信与 Promise ACK 确认机制 Demo](https://resource.zhuoson.com/demo/iframe-demo/index.html)**
+
+👉 **[点击这里体验：自动高度适应 (Auto Resize) 功能 Demo](https://resource.zhuoson.com/demo/iframe-demo/Highly-monitored.html)**
+
+👉 **[点击这里体验：全局状态同步 (State Sync) 与 RPC 远程调用 Demo](https://resource.zhuoson.com/demo/iframe-demo/remote-invocation.html)**
 
 > 💡 **Tip：** 体验时强烈建议打开浏览器的 **开发者工具 (F12) -> 控制台 (Console)**，您可以直观地查看到底层的双向通信细节、未就绪消息的“队列排队”过程，以及极致的 ACK 确认回执等完整动态日志！
 
@@ -12,6 +16,9 @@
 
 ## ✨ 核心特性
 
+- **RPC 远程过程调用**：像调用本地异步函数一样调用跨域 iframe 中的函数，完美获取返回值。
+- **全局状态共享 (State Sync)**：内置跨域状态机，支持多端状态增量/全量实时同步（类似微缩版 Pinia）。
+- **自动高度适应 (Auto Resize)**：子页面基于 `ResizeObserver` 智能探测 DOM 变化，父页面 iframe 标签高度自动无缝伸缩，彻底告别双滚动条。
 - **真正的多实例隔离**：完美支持在同一父页面中嵌入多个独立 iframe，底层自动进行环境隔离与引用校验，消息与状态互不干扰。
 
 - **优雅的事件驱动**：告别冗长的 `if-else`，支持类似 EventBus 的 `action/emit` 自定义事件分发。
@@ -39,11 +46,11 @@ npm i iframe-js
 适用于现代浏览器的原生 HTML 项目：
 
 ```sh
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.0/index.min.js
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.0/ejs/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.1/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.1/ejs/index.min.js
 
 <script type="module">
-  import Iframe from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.0/ejs/index.min.js';
+  import Iframe from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.1/ejs/index.min.js';
 </script>
 ```
 
@@ -242,4 +249,87 @@ document.getElementById('payBtn').onclick = async () => {
   }
 };
 
+```
+
+## 🔥 高阶特性指南 (Advanced)
+
+### 1. RPC 远程函数调用 (Remote Procedure Call)
+
+彻底告别繁琐的事件发布订阅，直接获取跨域函数的计算结果或异步数据。
+
+**提供方 (比如父页面暴露查询接口):**
+
+```javascript
+// 暴露一个名为 'getUserInfo' 的方法，支持 async/await
+iframeApp.expose('getUserInfo', async (params) => {
+    console.log('收到请求参数:', params.id);
+    const res = await fetch(`/api/user/${params.id}`);
+    return await res.json(); // 直接 return 数据
+});
+```
+
+**调用方 (比如子页面发起远程调用):**
+
+```javascript
+document.getElementById('btn').onclick = async () => {
+    try {
+        // 像调用本地函数一样丝滑！支持超时控制
+        const userInfo = await childApp.callRemote('getUserInfo', { id: 1001 }, 5000);
+        console.log('获取到远端数据:', userInfo);
+    } catch (error) {
+        console.error('RPC 调用失败或超时:', error.message);
+    }
+};
+```
+
+### 2. 状态共享同步 (State Sync)
+
+极其适合“全局深色模式切换”、“多语言包切换”或“全局用户信息共享”场景。
+
+**父页面 (初始化/修改状态):**
+
+```javascript
+// 1. 设置初始状态（即便子页面还没加载完，也会在加载后自动全量推过去）
+iframeApp.setState({ theme: 'dark', user: { name: '张三' } });
+
+// 2. 随时更新状态
+iframeApp.setState({ theme: 'light' });
+```
+
+**子页面 (监听状态变化):**
+
+```javascript
+// 监听状态变化（获取合并后的最新全量状态）
+childApp.onStateChange((newState, oldState) => {
+    if (newState.theme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+});
+
+// 主动获取当前状态
+const currentState = childApp.getState();
+```
+
+### 3. 自动高度适应 (Auto Resize)
+
+彻底解决 iframe 跨域高度自适应难题。
+
+**父页面 (授权接收高度同步):**
+
+```javascript
+// 父页面只需要调用这一行即可授权接收
+iframeApp.enableAutoResize();
+```
+
+**子页面 (开启高度探测):**
+
+```javascript
+// 开启智能探测，当页面 DOM 变化被撑开时，父页面的 iframe 会自动变长！
+childApp.startAutoResizer({
+    target: 'body', // 可选，默认监听 body
+    offset: 20, // 可选，额外补偿高度（比如底部有 fixed 阴影时）
+});
+
+// 不需要时可停止监听
+// childApp.stopAutoResizer();
 ```

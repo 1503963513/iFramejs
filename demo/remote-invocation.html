@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iFrame.js - Parent Page Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .control-panel {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .page-title {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .page-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+
+    .status-box {
+      background: #f5f7fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-left: 3px solid #667eea;
+    }
+
+    .status-label {
+      font-size: 12px;
+      color: #909399;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-content {
+      font-size: 14px;
+      color: #303133;
+      font-weight: 500;
+      word-break: break-all;
+      min-height: 22px;
+    }
+
+    .status-content.empty {
+      color: #c0c4cc;
+      font-style: italic;
+    }
+
+    .send-status {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #15803d;
+      text-align: left;
+      display: none;
+    }
+
+    .send-status.show {
+      display: block;
+    }
+
+    .send-status.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-ack {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+      margin-top: 12px;
+    }
+
+    .btn-ack:hover {
+      box-shadow: 0 6px 16px rgba(245, 87, 108, 0.6);
+    }
+
+    .iframe-wrapper {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      display: flex;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* 暗色模式样式 */
+    body.dark-mode {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
+    body.dark-mode .control-panel {
+      background: rgba(30, 30, 46, 0.95);
+    }
+
+    body.dark-mode .page-title {
+      color: #60a5fa;
+    }
+
+    body.dark-mode .status-box {
+      background: #1e1e2e;
+      border-color: #60a5fa;
+    }
+
+    body.dark-mode .status-label {
+      color: #64748b;
+    }
+
+    body.dark-mode .status-content {
+      color: #e2e8f0;
+    }
+
+    body.dark-mode .send-status {
+      background: #1e3a2f;
+      color: #4ade80;
+    }
+
+    body.dark-mode .send-status.error {
+      background: #3a1a1a;
+      color: #ef4444;
+    }
+
+    body.dark-mode .iframe-wrapper {
+      background: #1e1e2e;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="control-panel">
+      <h1 class="page-title">父页面（PRC调用和全局状态共享示例）</h1>
+      <div class="status-box">
+        <!-- <div class="status-label">接收消息</div> -->
+        <div class="status-content " id="name"></div>
+      </div>
+      <div class="button-group">
+        <button class="btn" id="fetchBtn">发生请求-调用子页面接口获取用户信息（PRC）</button>
+        <button class="btn" id="themeBtn">切换主题（全局状态共享）</button>
+      </div>
+      <div class="send-status" id="sendStatus"></div>
+    </div>
+    <div class="iframe-wrapper">
+      <iframe src="" id="child"></iframe>
+    </div>
+  </div>
+  <script src="../index.js"></script>
+  <script>
+    // <script type="module">
+    // import { Iframe } from '../ejs/index.js';
+    var opt = document.getElementById('opt');
+    var count = 0;
+
+    // 实例1
+    const iframeApp = new Iframe({
+      container: document.getElementById('child'),
+      url: 'http://127.0.0.1:5501/demo/remote-invocation-child.html',
+      whiteList: ['http://127.0.0.1:5501'],
+      timeout: 5000,
+    });
+
+    // 当前主题状态
+    let currentTheme = 'dark';
+
+    iframeApp.setState({
+      theme: currentTheme,
+      language: 'zh-CN',
+      user: { name: '张雅婷' } // 支持共享对象
+    });
+
+    // 初始化时应用主题样式
+    updateParentThemeUI(currentTheme);
+
+    // 切换主题函数
+    function toggleTheme() {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      iframeApp.setState({ theme: currentTheme });
+      updateParentThemeUI(currentTheme);
+      return { success: true, theme: currentTheme };
+    }
+
+    // 更新父页面主题 UI
+    function updateParentThemeUI(theme) {
+      if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    }
+
+    // 页面右上角点击了切换主题按钮
+    document.getElementById('themeBtn').onclick = () => {
+      toggleTheme();
+    };
+
+    // 暴露 setTheme 方法给子页面调用
+    iframeApp.expose('setTheme', async (params) => {
+      console.log('子页面请求切换主题:', params.theme);
+      if (params.theme === 'toggle') {
+        return toggleTheme();
+      } else {
+        // 直接设置指定主题
+        currentTheme = params.theme;
+        iframeApp.setState({ theme: currentTheme });
+        updateParentThemeUI(currentTheme);
+        return { success: true, theme: currentTheme };
+      }
+    });
+
+
+    // 暴露getUserInfo方法给子页面调用
+    iframeApp.expose('getUserInfo', async (params) => {
+      console.log('子页面传来参数:', params.userId);
+
+      const data = await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            id: params.userId,
+            name: '测试用户',
+            role: 'admin',
+            message: '这是一条延迟 2 秒返回的模拟数据'
+          });
+        }, 2000); //模拟请求
+      });
+      // 2秒后直接 return，底层会自动把数据打包发回给子页面！
+      return data;
+    });
+
+    // 调用子页面方法
+    document.getElementById('fetchBtn').onclick = async () => {
+      try {
+        // 显示 loading
+        const fetchBtn = document.getElementById('fetchBtn');
+        fetchBtn.disabled = true;
+        fetchBtn.innerText = '加载中...';
+
+        // 就像调用本地的 API 一样丝滑！
+        const userInfo = await iframeApp.callRemote('getChildInfo', { userId: 1001 });
+        console.log('拿到了子页面查回来的数据！', userInfo);
+        document.getElementById('name').innerText = userInfo.name;
+
+        // 隐藏 loading
+        fetchBtn.disabled = false;
+        fetchBtn.innerText = '发生请求-调用子页面接口获取用户信息（PRC）';
+      } catch (error) {
+        console.error('RPC 调用失败:', error.message);
+
+        // 隐藏 loading
+        const fetchBtn = document.getElementById('fetchBtn');
+        fetchBtn.disabled = false;
+        fetchBtn.innerText = '发生请求-调用子页面接口获取用户信息（PRC）';
+      }
+    };
+
+  </script>
+</body>
+
+</html>

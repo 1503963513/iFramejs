@@ -1,6 +1,6 @@
 {
   "name": "iframe-js",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "轻量、安全、优雅的跨域 iframe 通信库。支持 Promise ACK 双向确认、消息队列与多实例完全隔离。",
   "type": "module",
   "main": "ejs/index.js",

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iFrame.js - Child Page Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .content-wrapper {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 40px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    .page-title {
+      margin: 0 0 24px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: #f5576c;
+      text-align: center;
+      position: relative;
+      padding-bottom: 16px;
+    }
+
+    .page-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+      border-radius: 2px;
+    }
+
+    .status-box {
+      background: #fff5f7;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      border: 2px solid #ffecf0;
+    }
+
+    .status-label {
+      font-size: 13px;
+      color: #f5576c;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-label::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #f5576c;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+    }
+
+    .status-content {
+      font-size: 15px;
+      color: #303133;
+      font-weight: 500;
+      word-break: break-all;
+      min-height: 24px;
+      line-height: 1.6;
+    }
+
+    .status-content.empty {
+      color: #c0c4cc;
+      font-style: italic;
+    }
+
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(245, 87, 108, 0.4);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(245, 87, 108, 0.5);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
+    }
+
+    .btn-ack {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      margin-top: 12px;
+    }
+
+    .btn-ack:hover {
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn-theme {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+      margin-top: 12px;
+    }
+
+    .btn-theme:hover {
+      box-shadow: 0 6px 16px rgba(17, 153, 142, 0.6);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 12px;
+      background: #f0f9ff;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #0891b2;
+    }
+
+    .connection-status::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: #0891b2;
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .embed-status {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .embed-status.embedded::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #22c55e;
+      border-radius: 50%;
+    }
+
+    .embed-status.standalone::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #f59e0b;
+      border-radius: 50%;
+    }
+
+    .send-status {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #15803d;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .send-status.show {
+      opacity: 1;
+    }
+
+    .send-status.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    /* 暗色模式样式 */
+    body.dark-mode {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
+    body.dark-mode .content-wrapper {
+      background: rgba(30, 30, 46, 0.95);
+    }
+
+    body.dark-mode .page-title {
+      color: #4ade80;
+    }
+
+    body.dark-mode .status-box {
+      background: #1e1e2e;
+      border-color: #4ade80;
+    }
+
+    body.dark-mode .status-label {
+      color: #4ade80;
+    }
+
+    body.dark-mode .status-content {
+      color: #e2e8f0;
+    }
+
+    body.dark-mode .connection-status {
+      background: #1e1e2e;
+      color: #4ade80;
+    }
+
+    body.dark-mode .embed-status {
+      background: #1e1e2e;
+      color: #94a3b8;
+    }
+
+    body.dark-mode .send-status {
+      background: #1e3a2f;
+      color: #4ade80;
+    }
+
+    body.dark-mode .send-status.error {
+      background: #3a1a1a;
+      color: #ef4444;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="content-wrapper">
+    <h1 class="page-title">子页面 1</h1>
+    <div class="status-box">
+      <!-- <div class="status-label">接收数据</div> -->
+      <div class="status-content " id="name">等待数据...</div>
+    </div>
+    <button class="btn" id="fetchBtn">发送请求-调用父页面接口获取用户信息</button>
+    <button class="btn btn-theme" id="childThemeBtn">切换主题（同步到父页面）</button>
+    <div class="connection-status" id="connectionStatus">检测中...</div>
+    <div class="embed-status" id="embedStatus"></div>
+    <div class="send-status" id="sendStatus"></div>
+  </div>
+  <script src="../index.js"></script>
+  <script>
+    // <script type="module">
+    // import { Iframe } from '../ejs/index.js';
+    var opt = document.getElementById('opt');
+    var count = 0;
+
+    const childApp = new Iframe('game1', {
+      timeout: 5000,
+    });
+
+    // 监听状态变化
+    childApp.onStateChange((newState, oldState) => {
+      // newState 会合并父页面的数据
+      console.log('当前主题:', newState.theme);
+
+      // 根据状态切换自身 UI
+      if (newState.theme === 'dark') {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    });
+
+    // 子页面切换主题，同步到父页面
+    document.getElementById('childThemeBtn').onclick = async () => {
+      try {
+        // 显示 loading
+        const childThemeBtn = document.getElementById('childThemeBtn');
+        childThemeBtn.disabled = true;
+        childThemeBtn.innerText = '切换中...';
+
+        // 通过 RPC 调用父页面的 setTheme 方法
+        const result = await childApp.callRemote('setTheme', { theme: 'toggle' });
+        console.log('主题切换成功:', result);
+
+        // 隐藏 loading
+        childThemeBtn.disabled = false;
+        childThemeBtn.innerText = '切换主题（同步到父页面）';
+      } catch (error) {
+        console.error('主题切换失败:', error.message);
+
+        // 隐藏 loading
+        const childThemeBtn = document.getElementById('childThemeBtn');
+        childThemeBtn.disabled = false;
+        childThemeBtn.innerText = '切换主题（同步到父页面）';
+      }
+    };
+
+    // 暴露 getChildInfo 方法给父页面调用
+    document.getElementById('fetchBtn').onclick = async () => {
+      try {
+        // 显示 loading
+        const fetchBtn = document.getElementById('fetchBtn');
+        fetchBtn.disabled = true;
+        fetchBtn.innerText = '加载中...';
+
+        // 就像调用本地的 API 一样丝滑！
+        const userInfo = await childApp.callRemote('getUserInfo', { userId: 1001 });
+        console.log('拿到了父页面查回来的数据！', userInfo);
+        document.getElementById('name').innerText = userInfo.name;
+
+        // 隐藏 loading
+        fetchBtn.disabled = false;
+        fetchBtn.innerText = '发送请求-调用父页面接口获取用户信息';
+      } catch (error) {
+        console.error('RPC 调用失败:', error.message);
+
+        // 隐藏 loading
+        const fetchBtn = document.getElementById('fetchBtn');
+        fetchBtn.disabled = false;
+        fetchBtn.innerText = '发送请求-调用父页面接口获取用户信息';
+      }
+    };
+
+    // 暴露 getChildInfo 方法给父页面调用
+    childApp.expose('getChildInfo', async (params) => {
+      console.log('子页面传来参数:', params.userId);
+      const data = await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            id: params.userId,
+            name: '测试用户2',
+            role: 'admin',
+            message: '这是一条延迟 2 秒返回的模拟数据'
+          });
+        }, 2000); //模拟请求
+      });
+      // 2秒后直接 return，底层会自动把数据打包发回给子页面！
+      return data;
+    });
+
+    // 页面检测 
+    window.addEventListener('load', () => {
+      const status = childApp.getEmbedStatus();
+      const embedStatusEl = document.getElementById('embedStatus');
+      const connectionStatus = document.getElementById('connectionStatus');
+
+      if (status.isEmbedded) {
+        embedStatusEl.className = 'embed-status embedded';
+        embedStatusEl.innerHTML = `
+            <span style="font-weight: 600;">当前状态:</span>
+            内嵌在 iframe 中
+            <span style="opacity: 0.6;">(可通过 parent 通信)</span>
+          `;
+        connectionStatus.innerHTML = status.canCommunicate ? '已连接到父页面' : '无法通信';
+      } else {
+        embedStatusEl.className = 'embed-status standalone';
+        embedStatusEl.innerHTML = `
+            <span style="font-weight: 600;">当前状态:</span>
+            独立页面
+            <span style="opacity: 0.6;">(无法使用 iframe 通信)</span>
+          `;
+        connectionStatus.innerHTML = '未检测到父页面';
+        connectionStatus.style.color = '#f59e0b';
+        connectionStatus.style.background = '#fff7ed';
+      }
+    });
+  </script>
+</body>
+
+</html>

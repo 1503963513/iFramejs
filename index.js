@@ -40,6 +40,9 @@ class Iframe {
         this._customMap = new Map();
         this._pendingMessages = new Map();
         this._eventHandlers = new Map();
+        this._rpcMethods = new Map();
+        this._state = {};
+        this._stateListeners = new Set();
 
         this._messageQueue = [];
 
@@ -48,6 +51,8 @@ class Iframe {
         this._messageListener = null;
         this._isDestroyed = false;
         this._iframeLoaded = false;
+        this._autoResizeEnabled = false;
+        this._resizeObserver = null;
 
         switch (true) {
             case !!options?.container:
@@ -59,6 +64,7 @@ class Iframe {
                 container.src = url;
                 this.Whitelist = whiteList || [];
                 this._updateOriginCache();
+                this.iframeNode = container;
                 this.iframe = container.contentWindow;
 
                 try {
@@ -85,6 +91,7 @@ class Iframe {
                 break;
 
             case options?.nodeName === 'IFRAME':
+                this.iframeNode = options;
                 this.iframe = options.contentWindow;
                 try {
                     this.doc = options.contentDocument || options.contentWindow.document;
@@ -128,6 +135,7 @@ class Iframe {
     }
 
     _flushMessageQueue() {
+        this._syncFullState();
         if (this._messageQueue.length > 0) {
             console.log(`[Iframe-js] [Queue] Flushing ${this._messageQueue.length} pending messages...`);
             this._messageQueue.forEach(({ payload, options, resolve, isAck }) => {
@@ -244,6 +252,39 @@ class Iframe {
                 return;
             }
 
+            if (e.data?.isRpcRes && e.data?.callId && this._pendingMessages.has(e.data.callId)) {
+                const pending = this._pendingMessages.get(e.data.callId);
+                clearTimeout(pending.timeout);
+                if (e.data.error) {
+                    pending.reject(new Error(e.data.error));
+                } else {
+                    pending.resolve(e.data.result);
+                }
+                this._pendingMessages.delete(e.data.callId);
+                return;
+            }
+
+            if (e.data?.isStateSync && e.data?.state) {
+                const oldState = { ...this._state };
+                this._state = { ...this._state, ...e.data.state };
+
+                this._stateListeners.forEach((listener) => {
+                    try {
+                        listener(this._state, oldState);
+                    } catch (err) {
+                        console.error('[Iframe StateSync] listener error:', err);
+                    }
+                });
+                return;
+            }
+
+            if (e.data?.isAutoResize && e.data?.height) {
+                if (this._autoResizeEnabled && this.iframeNode) {
+                    this.iframeNode.style.height = `${e.data.height}px`;
+                }
+                return; // 拦截完毕
+            }
+
             if (this._originCache.size === 0) {
                 if (this.iframe === window.parent) {
                     this.addWhiteList(e.origin);
@@ -289,6 +330,41 @@ class Iframe {
                 } catch (err) {
                     console.error('[Iframe-js] Failed to send ACK back:', err);
                 }
+            }
+
+            if (e.data?.isRpcReq && e.data?.methodName) {
+                const handler = this._rpcMethods.get(e.data.methodName);
+                // 封装返回结果的通信函数
+                const sendResponse = (error, result) => {
+                    try {
+                        const targetOrigin = e.origin && e.origin !== 'null' ? e.origin : '*';
+                        e.source.postMessage(
+                            {
+                                source: 'Iframe-Child-Screen' + this.name,
+                                isRpcRes: true,
+                                callId: e.data.callId,
+                                result: result,
+                                error: error ? String(error) : null,
+                                timestamp: Date.now(),
+                            },
+                            targetOrigin,
+                        );
+                    } catch (err) {
+                        console.error('[Iframe] RPC send response failed:', err);
+                    }
+                };
+                if (!handler) {
+                    return sendResponse(`RPC Method "${e.data.methodName}" not found on target.`);
+                }
+                try {
+                    // 巧妙利用 Promise.resolve 兼容同步和异步(async)函数
+                    Promise.resolve(handler(e.data.params, { source: this.name }))
+                        .then((res) => sendResponse(null, res))
+                        .catch((err) => sendResponse(err?.message || err));
+                } catch (err) {
+                    sendResponse(err?.message || err);
+                }
+                return;
             }
 
             if (e.data?.action) {
@@ -391,6 +467,62 @@ class Iframe {
             this.Whitelist[index] = newUrl;
             this._updateOriginCache();
         }
+    }
+
+    expose(methodName, handler) {
+        if (this._isDestroyed) return;
+        if (typeof handler !== 'function') {
+            console.error('[Iframe RPC] handler must be a function');
+            return;
+        }
+        this._rpcMethods.set(methodName, handler);
+    }
+
+    callRemote(methodName, params = {}, timeout = this._defaultTimeout) {
+        return new Promise((resolve, reject) => {
+            if (this._isDestroyed) return reject(new Error('Instance is destroyed'));
+
+            const targetWindow = this.iframe;
+            if (!targetWindow) return reject(new Error('Target window is null'));
+
+            // 借用底层的 messageQueue 机制，如果还没 ready 则排队（选做）
+            if (!this.isReady()) {
+                console.warn('[Iframe RPC] iframe not ready, pushing RPC call to queue');
+                this._messageQueue.push({
+                    isAck: false, // 不走普通 ack 逻辑
+                    payload: null,
+                    resolve: () => this.callRemote(methodName, params, timeout).then(resolve).catch(reject),
+                });
+                return;
+            }
+
+            const callId = 'rpc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+            try {
+                const message = {
+                    source: 'Iframe-Child-Screen' + this.name,
+                    isRpcReq: true,
+                    methodName: methodName,
+                    callId: callId,
+                    params: params, // 携带参数
+                    timestamp: Date.now(),
+                };
+
+                const targetOrigin = this.postOrigin || '*';
+                targetWindow.postMessage(message, targetOrigin);
+
+                // 设置 RPC 专属超时监听
+                const timer = setTimeout(() => {
+                    this._pendingMessages.delete(callId);
+                    reject(new Error(`RPC call "${methodName}" timeout after ${timeout}ms`));
+                }, timeout);
+
+                // 复用你的 _pendingMessages 容器存 resolve 和 reject
+                this._pendingMessages.set(callId, { timeout: timer, resolve, reject });
+            } catch (e) {
+                reject(new Error(`RPC send failed: ${e.message}`));
+            }
+        });
     }
 
     sendMessageWithAckToChild(payload, timeout = this._defaultTimeout) {
@@ -521,6 +653,110 @@ class Iframe {
             this._customMap.set(eventKey, fun);
         }
     }
+    getState() {
+        return { ...this._state };
+    }
+
+    onStateChange(listener) {
+        if (this._isDestroyed) return;
+        if (typeof listener === 'function') {
+            this._stateListeners.add(listener);
+        }
+    }
+
+    offStateChange(listener) {
+        this._stateListeners.delete(listener);
+    }
+
+    setState(partialState) {
+        if (this._isDestroyed || !partialState || typeof partialState !== 'object') return;
+
+        const oldState = { ...this._state };
+        this._state = { ...this._state, ...partialState };
+
+        this._stateListeners.forEach((listener) => {
+            try {
+                listener(this._state, oldState);
+            } catch (err) {
+                console.error('[Iframe StateSync] listener error:', err);
+            }
+        });
+
+        if (this.isReady()) {
+            this._sendStateSync(partialState);
+        }
+    }
+
+    _sendStateSync(partialState) {
+        const targetWindow = this.iframe;
+        if (!targetWindow) return;
+        try {
+            const message = {
+                source: 'Iframe-Child-Screen' + this.name,
+                isStateSync: true,
+                state: partialState,
+                timestamp: Date.now(),
+            };
+            const targetOrigin = this.postOrigin || '*';
+            targetWindow.postMessage(message, targetOrigin);
+        } catch (e) {
+            console.error('[Iframe StateSync] sync failed:', e);
+        }
+    }
+
+    _syncFullState() {
+        if (Object.keys(this._state).length > 0 && this.isReady()) {
+            this._sendStateSync(this._state);
+        }
+    }
+
+    enableAutoResize() {
+        if (this._isDestroyed || this.iframe === window.parent) return;
+        this._autoResizeEnabled = true;
+    }
+
+    startAutoResizer(config = {}) {
+        if (this._isDestroyed || this.iframe !== window.parent) return;
+        if (this._resizeObserver) return;
+
+        const targetNode = config.target ? document.querySelector(config.target) : document.body;
+        if (!targetNode) {
+            console.warn('[Iframe Resize] Target node not found');
+            return;
+        }
+
+        const offset = config.offset || 0;
+
+        const sendHeight = () => {
+            try {
+                const height = Math.max(targetNode.scrollHeight, targetNode.offsetHeight, document.documentElement.offsetHeight);
+
+                const message = {
+                    source: 'Iframe-Child-Screen' + this.name,
+                    isAutoResize: true,
+                    height: height + offset,
+                    timestamp: Date.now(),
+                };
+                window.parent.postMessage(message, this.postOrigin || '*');
+            } catch (e) {
+                console.error('[Iframe Resize] Failed to send height:', e);
+            }
+        };
+
+        this._resizeObserver = new ResizeObserver(() => {
+            sendHeight();
+        });
+
+        this._resizeObserver.observe(targetNode);
+        sendHeight();
+    }
+
+    stopAutoResizer() {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+    }
 
     removeAction(name) {
         const eventKey = EVENT_HEAD_PREFIX + name;
@@ -538,6 +774,12 @@ class Iframe {
         }
 
         this._isDestroyed = true;
+
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+        this.iframeNode = null;
 
         this._pendingMessages.forEach((pending, id) => {
             clearTimeout(pending.timeout);
@@ -566,6 +808,8 @@ class Iframe {
         this.emit = null;
         this.Whitelist = [];
         this._originCache.clear();
+        this._stateListeners.clear();
+        this._state = {};
 
         console.info('[Iframe-js] Iframe instance destroyed');
     }
