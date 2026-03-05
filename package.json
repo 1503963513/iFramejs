@@ -1,11 +1,12 @@
 {
   "name": "iframe-js",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "轻量、安全、优雅的跨域 iframe 通信库。支持 Promise ACK 双向确认、消息队列与多实例完全隔离。",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/1503963513/iFramejs.git"
   },
+  "type": "module",
   "main": "ejs/index.js",
   "module": "index.js",
   "types": "index.d.ts",
