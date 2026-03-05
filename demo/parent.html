@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iFrame.js - Parent Page Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .control-panel {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .page-title {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .page-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+
+    .status-box {
+      background: #f5f7fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-left: 3px solid #667eea;
+    }
+
+    .status-label {
+      font-size: 12px;
+      color: #909399;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-content {
+      font-size: 14px;
+      color: #303133;
+      font-weight: 500;
+      word-break: break-all;
+      min-height: 22px;
+    }
+
+    .status-content.empty {
+      color: #c0c4cc;
+      font-style: italic;
+    }
+
+    .send-status {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #15803d;
+      text-align: left;
+      display: none;
+    }
+
+    .send-status.show {
+      display: block;
+    }
+
+    .send-status.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-ack {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+      margin-top: 12px;
+    }
+
+    .btn-ack:hover {
+      box-shadow: 0 6px 16px rgba(245, 87, 108, 0.6);
+    }
+
+    .iframe-wrapper {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      display: flex;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .iframe-wap1 {
+      width: 50%;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="control-panel">
+      <h1 class="page-title">父页面</h1>
+      <div class="status-box">
+        <div class="status-label">接收消息</div>
+        <div class="status-content empty" id="opt">等待消息...</div>
+      </div>
+      <div class="button-group">
+        <div class="button-row">
+          <button class="btn" id="b1">页面1: 发送消息</button>
+          <button class="btn" id="b1_2">页面1: 发送自定义事件</button>
+          <button class="btn btn-ack" id="b1Ack">页面1: 发送确认消息</button>
+          <button class="btn btn-ack" id="b1Delete"
+            style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">页面1:
+            发送删除事件</button>
+          <button class="btn btn-ack" id="b1EmitAck"
+            style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);">页面1:
+            发送带确认的自定义事件</button>
+        </div>
+        <div class="button-row">
+          <button class="btn" id="b2">页面2: 发送消息</button>
+          <button class="btn" id="b2_2">页面2: 发送自定义事件</button>
+          <button class="btn btn-ack" id="b2Ack">页面2: 发送确认消息</button>
+          <button class="btn btn-ack" id="b2Delete"
+            style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">页面2:
+            发送删除事件</button>
+          <button class="btn btn-ack" id="b2EmitAck"
+            style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);">页面2:
+            发送带确认的自定义事件</button>
+        </div>
+      </div>
+      <div class="send-status" id="sendStatus"></div>
+    </div>
+    <div class="iframe-wrapper">
+      <div class="iframe-wap1">
+        <iframe src="" id="child"></iframe>
+      </div>
+      <div class="iframe-wap1">
+        <iframe src="" id="child2"></iframe>
+      </div>
+    </div>
+  </div>
+  <script src="../index.js"></script>
+  <script>
+    // <script type="module">
+    // import { Iframe } from '../ejs/index.js';
+    var opt = document.getElementById('opt');
+    var b1 = document.getElementById('b1');
+    var b1_2 = document.getElementById('b1_2');
+    var b1Ack = document.getElementById('b1Ack');
+    var b1Delete = document.getElementById('b1Delete');
+    var b1EmitAck = document.getElementById('b1EmitAck');
+    var b2 = document.getElementById('b2');
+    var b2_2 = document.getElementById('b2_2');
+    var b2Ack = document.getElementById('b2Ack');
+    var b2Delete = document.getElementById('b2Delete');
+    var b2EmitAck = document.getElementById('b2EmitAck');
+    var count = 0;
+
+    // 实例1
+    const iframe = new Iframe({
+      container: document.getElementById('child'),
+      url: 'http://127.0.0.1:5501/demo/child.html',
+      whiteList: ['http://127.0.0.1:5501'],
+      timeout: 5000,
+    });
+
+    iframe.message = (e) => {
+      console.log(`parent 收到 ${e.source} 消息`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    };
+
+    iframe.action('handel', (e) => {
+      console.log(`parent 收到 ${e.source} 的自定义handel事件`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    });
+
+    iframe.action('delete', (e) => {
+      console.log(`parent 收到 ${e.source} 的自定义delete事件`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    });
+
+    // 实例2
+    const iframe2 = new Iframe({
+      container: document.getElementById('child2'),
+      url: 'http://127.0.0.1:5501/demo/child2.html',
+      whiteList: ['http://127.0.0.1:5501'],
+      timeout: 5000,
+    });
+
+    iframe2.message = (e) => {
+      console.log(`parent 收到 ${e.source} 消息`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    };
+
+    iframe2.action('handel', (e) => {
+      console.log(`parent 收到 ${e.source} 的自定义handel事件`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    });
+
+    iframe2.action('delete', (e) => {
+      console.log(`parent 收到 ${e.source} 的自定义delete事件`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    });
+
+
+    // 页面1: 发送普通消息
+    b1.onclick = function () {
+      count++;
+
+      if (checkReady1()) return;
+
+      const message = 'hello child1 ' + count;
+
+      const sendResult = iframe.sendMessage({ msg: message });
+      showSendStatus(sendResult, `页面1: ${message}`);
+
+      if (sendResult) {
+        console.log(`✓ 页面1消息发送成功: ${message}`);
+      } else {
+        console.error(`✗ 页面1消息发送失败: ${message}`);
+      }
+    };
+
+    // 页面1: 发送自定义事件
+    b1_2.onclick = function () {
+      count++;
+
+      if (checkReady1()) return;
+      const message = 'hello emit child1 ' + count;
+      const emitResult = iframe.emit('handel', { msg: message });
+      showSendStatus(emitResult, `页面1: ${message}`);
+
+      if (emitResult) {
+        console.log(`✓ 页面1自定义事件发送成功: ${message}`);
+      } else {
+        console.error(`✗ 页面1自定义事件发送失败: ${message}`);
+      }
+    }
+
+    // 页面1: 发送确认消息
+    b1Ack.onclick = async function () {
+      count++;
+
+      if (checkReady1()) return;
+
+      const message = 'hello child1 with ACK ' + count;
+      showSendStatus(true, '页面1: 发送确认消息中...');
+
+      try {
+        const result = await iframe.sendMessageWithAckToChild({ msg: message }, 5000);
+        showSendStatus(result, result ? `页面1: 收到确认 - ${message}` : '页面1: 确认超时');
+
+        if (result) {
+          console.warn(`✓ 页面1消息已确认收到: ${message}`);
+        } else {
+          console.error(`✗ 页面1消息确认超时: ${message}`);
+        }
+      } catch (error) {
+        console.error('页面1 ACK 错误:', error);
+        showSendStatus(false, '页面1: ACK 错误');
+      }
+    };
+
+    // 页面1: 发送删除事件
+    b1Delete.onclick = function () {
+      count++;
+
+      if (checkReady1()) return;
+      const message = 'delete event from parent to child1 ' + count;
+      const emitResult = iframe.emit('handel', { msg: message });
+      showSendStatus(emitResult, `页面1: ${message}`);
+
+      if (emitResult) {
+        console.log(`✓ 页面1删除事件发送成功: ${message}`);
+      } else {
+        console.error(`✗ 页面1删除事件发送失败: ${message}`);
+      }
+    };
+
+    // 页面1: 发送带确认的自定义事件
+    b1EmitAck.onclick = async function () {
+      count++;
+
+      if (checkReady1()) return;
+      const message = 'emit with ACK from parent to child1 ' + count;
+      showSendStatus(true, '页面1: 发送带确认的自定义事件中...');
+
+      try {
+        const result = await iframe.emitToChildWithAck('handel', { msg: message }, 5000);
+        showSendStatus(result, result ? `页面1: 收到确认 - ${message}` : '页面1: 确认超时');
+
+        if (result) {
+          console.log(`✓ 页面1自定义事件已确认收到: ${message}`);
+        } else {
+          console.error(`✗ 页面1自定义事件确认超时: ${message}`);
+        }
+      } catch (error) {
+        console.error('页面1 Emit ACK 错误:', error);
+        showSendStatus(false, '页面1: Emit ACK 错误');
+      }
+    };
+
+    // 页面2: 发送普通消息
+    b2.onclick = function () {
+      count++;
+
+      if (checkReady2()) return;
+
+      const message = 'hello child2 ' + count;
+
+      const sendResult = iframe2.sendMessage({ msg: message });
+      showSendStatus(sendResult, `页面2: ${message}`);
+
+      if (sendResult) {
+        console.log(`✓ 页面2消息发送成功: ${message}`);
+      } else {
+        console.error(`✗ 页面2消息发送失败: ${message}`);
+      }
+    };
+
+    // 页面2: 发送自定义事件
+    b2_2.onclick = function () {
+      count++;
+
+      if (checkReady2()) return;
+      const message = 'hello emit child2 ' + count;
+      const emitResult = iframe2.emit('handel', { msg: message });
+      showSendStatus(emitResult, `页面2: ${message}`);
+
+      if (emitResult) {
+        console.log(`✓ 页面2自定义事件发送成功: ${message}`);
+      } else {
+        console.error(`✗ 页面2自定义事件发送失败: ${message}`);
+      }
+    }
+
+    // 页面2: 发送确认消息
+    b2Ack.onclick = async function () {
+      count++;
+
+      if (checkReady2()) return;
+
+      const message = 'hello child2 with ACK ' + count;
+      showSendStatus(true, '页面2: 发送确认消息中...');
+
+      try {
+        const result = await iframe2.sendMessageWithAckToChild({ msg: message }, 5000);
+        showSendStatus(result, result ? `页面2: 收到确认 - ${message}` : '页面2: 确认超时');
+
+        if (result) {
+          console.warn(`✓ 页面2消息已确认收到: ${message}`);
+        } else {
+          console.error(`✗ 页面2消息确认超时: ${message}`);
+        }
+      } catch (error) {
+        console.error('页面2 ACK 错误:', error);
+        showSendStatus(false, '页面2: ACK 错误');
+      }
+    };
+
+    // 页面2: 发送删除事件
+    b2Delete.onclick = function () {
+      count++;
+
+      if (checkReady2()) return;
+      const message = 'delete event from parent to child2 ' + count;
+      const emitResult = iframe2.emit('handel', { msg: message });
+      showSendStatus(emitResult, `页面2: ${message}`);
+
+      if (emitResult) {
+        console.log(`✓ 页面2删除事件发送成功: ${message}`);
+      } else {
+        console.error(`✗ 页面2删除事件发送失败: ${message}`);
+      }
+    };
+
+    // 页面2: 发送带确认的自定义事件
+    b2EmitAck.onclick = async function () {
+      count++;
+
+      if (checkReady2()) return;
+      const message = 'emit with ACK from parent to child2 ' + count;
+      showSendStatus(true, '页面2: 发送带确认的自定义事件中...');
+
+      try {
+        const result = await iframe2.emitToChildWithAck('handel', { msg: message }, 5000);
+        showSendStatus(result, result ? `页面2: 收到确认 - ${message}` : '页面2: 确认超时');
+
+        if (result) {
+          console.log(`✓ 页面2自定义事件已确认收到: ${message}`);
+        } else {
+          console.error(`✗ 页面2自定义事件确认超时: ${message}`);
+        }
+      } catch (error) {
+        console.error('页面2 Emit ACK 错误:', error);
+        showSendStatus(false, '页面2: Emit ACK 错误');
+      }
+    };
+
+    // 工具函数
+    function checkReady1() {
+      if (!iframe.isReady()) {
+        showSendStatus(false, '页面1: 通信未就绪');
+        console.error('页面1通信未就绪,无法发送消息');
+        return true;
+      }
+      return false;
+    }
+
+    function checkReady2() {
+      if (!iframe2.isReady()) {
+        showSendStatus(false, '页面2: 通信未就绪');
+        console.error('页面2通信未就绪,无法发送消息');
+        return true;
+      }
+      return false;
+    }
+
+    // 工具函数
+    function showSendStatus(success, message) {
+      const sendStatus = document.getElementById('sendStatus');
+      sendStatus.classList.add('show');
+      sendStatus.classList.remove('error');
+
+      if (success) {
+        sendStatus.textContent = `✓ 发送成功: ${message}`;
+        sendStatus.classList.remove('error');
+      } else {
+        sendStatus.textContent = `✗ 发送失败: ${message}`;
+        sendStatus.classList.add('error');
+      }
+
+      setTimeout(() => {
+        sendStatus.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+</body>
+
+</html>

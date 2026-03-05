@@ -1,378 +1,448 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>iFrame.js - Child Page Demo</title>
-    <style>
-      * {
-        box-sizing: border-box;
-      }
 
-      html,
-      body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-          'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iFrame.js - Child Page Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-      .content-wrapper {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 16px;
-        padding: 40px;
-        width: 90%;
-        max-width: 500px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        backdrop-filter: blur(10px);
-      }
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
 
-      .page-title {
-        margin: 0 0 24px 0;
-        font-size: 28px;
-        font-weight: 700;
-        color: #f5576c;
-        text-align: center;
-        position: relative;
-        padding-bottom: 16px;
-      }
+    .content-wrapper {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 40px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+    }
 
-      .page-title::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60px;
-        height: 3px;
-        background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
-        border-radius: 2px;
-      }
+    .page-title {
+      margin: 0 0 24px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: #f5576c;
+      text-align: center;
+      position: relative;
+      padding-bottom: 16px;
+    }
 
-      .status-box {
-        background: #fff5f7;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 24px;
-        border: 2px solid #ffecf0;
-      }
+    .page-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+      border-radius: 2px;
+    }
 
-      .status-label {
-        font-size: 13px;
-        color: #f5576c;
-        margin-bottom: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+    .status-box {
+      background: #fff5f7;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      border: 2px solid #ffecf0;
+    }
 
-      .status-label::before {
-        content: '';
-        width: 8px;
-        height: 8px;
-        background: #f5576c;
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-      }
+    .status-label {
+      font-size: 13px;
+      color: #f5576c;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-      @keyframes pulse {
-        0%, 100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 0.5;
-          transform: scale(0.8);
-        }
-      }
+    .status-label::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #f5576c;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
 
-      .status-content {
-        font-size: 15px;
-        color: #303133;
-        font-weight: 500;
-        word-break: break-all;
-        min-height: 24px;
-        line-height: 1.6;
-      }
+    @keyframes pulse {
 
-      .status-content.empty {
-        color: #c0c4cc;
-        font-style: italic;
-      }
-
-      .btn {
-        width: 100%;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 16px 32px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 16px rgba(245, 87, 108, 0.4);
-      }
-
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(245, 87, 108, 0.5);
-      }
-
-      .btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
-      }
-
-      .btn-ack {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        margin-top: 12px;
-      }
-
-      .btn-ack:hover {
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
-      }
-
-      .connection-status {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 20px;
-        padding: 12px;
-        background: #f0f9ff;
-        border-radius: 8px;
-        font-size: 13px;
-        color: #0891b2;
-      }
-
-      .connection-status::before {
-        content: '✓';
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
-        background: #0891b2;
-        color: white;
-        border-radius: 50%;
-        font-size: 12px;
-        font-weight: bold;
-      }
-
-      .embed-status {
-        margin-top: 12px;
-        padding: 10px 16px;
-        background: #f8fafc;
-        border-radius: 8px;
-        font-size: 13px;
-        color: #64748b;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-      }
-
-      .embed-status.embedded::before {
-        content: '';
-        width: 6px;
-        height: 6px;
-        background: #22c55e;
-        border-radius: 50%;
-      }
-
-      .embed-status.standalone::before {
-        content: '';
-        width: 6px;
-        height: 6px;
-        background: #f59e0b;
-        border-radius: 50%;
-      }
-
-      .send-status {
-        margin-top: 12px;
-        padding: 10px 16px;
-        background: #f0fdf4;
-        border-radius: 8px;
-        font-size: 12px;
-        color: #15803d;
-        text-align: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .send-status.show {
+      0%,
+      100% {
         opacity: 1;
+        transform: scale(1);
       }
 
-      .send-status.error {
-        background: #fef2f2;
-        color: #dc2626;
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
       }
-    </style>
-  </head>
-  <body>
-    <div class="content-wrapper">
-      <h1 class="page-title">子页面</h1>
-      <div class="status-box">
-        <div class="status-label">接收消息</div>
-        <div class="status-content empty" id="opt">等待消息...</div>
-      </div>
-      <button class="btn" id="b">发送消息到父页面</button>
-      <button class="btn btn-ack" id="bAck">发送确认消息</button>
-      <div class="connection-status" id="connectionStatus">检测中...</div>
-      <div class="embed-status" id="embedStatus"></div>
-      <div class="send-status" id="sendStatus"></div>
+    }
+
+    .status-content {
+      font-size: 15px;
+      color: #303133;
+      font-weight: 500;
+      word-break: break-all;
+      min-height: 24px;
+      line-height: 1.6;
+    }
+
+    .status-content.empty {
+      color: #c0c4cc;
+      font-style: italic;
+    }
+
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(245, 87, 108, 0.4);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(245, 87, 108, 0.5);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
+    }
+
+    .btn-ack {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      margin-top: 12px;
+    }
+
+    .btn-ack:hover {
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 12px;
+      background: #f0f9ff;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #0891b2;
+    }
+
+    .connection-status::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: #0891b2;
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .embed-status {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .embed-status.embedded::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #22c55e;
+      border-radius: 50%;
+    }
+
+    .embed-status.standalone::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #f59e0b;
+      border-radius: 50%;
+    }
+
+    .send-status {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #15803d;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .send-status.show {
+      opacity: 1;
+    }
+
+    .send-status.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="content-wrapper">
+    <h1 class="page-title">子页面 1</h1>
+    <div class="status-box">
+      <div class="status-label">接收消息</div>
+      <div class="status-content empty" id="opt">等待消息...</div>
     </div>
-      <script src="../index.js"></script>
-      <script >
-      // <script type="module">
-      // import { Iframe } from '../ejs/index.js';
-      var opt = document.getElementById('opt');
-      var ob = document.getElementById('b');
-      var obAck = document.getElementById('bAck');
-      var count = 0;
+    <button class="btn" id="b">发送消息到父页面</button>
+    <button class="btn btn-ack" id="b2">发送自定义事件到父页面</button>
+    <button class="btn btn-ack" id="bAck">发送确认消息</button>
+    <button class="btn btn-ack" id="bDelete"
+      style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">发送删除事件</button>
+    <button class="btn btn-ack" id="bEmitAck"
+      style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);">发送带确认的自定义事件</button>
+    <div class="connection-status" id="connectionStatus">检测中...</div>
+    <div class="embed-status" id="embedStatus"></div>
+    <div class="send-status" id="sendStatus"></div>
+  </div>
+  <script src="../index.js"></script>
+  <script>
+    // <script type="module">
+    // import { Iframe } from '../ejs/index.js';
+    var opt = document.getElementById('opt');
+    var ob = document.getElementById('b');
+    var ob2 = document.getElementById('b2');
+    var obAck = document.getElementById('bAck');
+    var obDelete = document.getElementById('bDelete');
+    var obEmitAck = document.getElementById('bEmitAck');
+    var count = 0;
 
-      /**
-       * 显示发送状态
-       * @param {boolean} success 是否成功
-       * @param {string} message 消息内容
-       */
-      function showSendStatus(success, message) {
-        const sendStatus = document.getElementById('sendStatus');
-        sendStatus.classList.add('show');
-        sendStatus.classList.remove('error');
 
-        if (success) {
-          sendStatus.textContent = `✓ 发送成功: ${message}`;
-          sendStatus.classList.remove('error');
-        } else {
-          sendStatus.textContent = `✗ 发送失败: ${message}`;
-          sendStatus.classList.add('error');
-        }
 
-        setTimeout(() => {
-          sendStatus.classList.remove('show');
-        }, 3000);
+    const parent = new Iframe('game1', {
+      timeout: 5000,
+    });
+
+    // 使用库的方法获取嵌入状态
+    const embedStatus = parent.getEmbedStatus();
+    console.log('嵌入状态:', embedStatus);
+
+    // 检查通信是否就绪
+    const isReady = parent.isReady();
+    console.log('通信就绪状态:', isReady);
+
+    parent.addWhiteList(['http://127.0.0.1:5501', 'https://www.zhuoson.com']);
+    parent.action('onload', () => {
+      console.log('load');
+    });
+
+    parent.message = (e) => {
+      console.log(`child1 收到 ${e.source} 消息`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    };
+
+    parent.action('handel', (e) => {
+      console.log(`child1 收到 ${e.source} 的自定义事件`, e);
+
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    });
+
+    parent.action('delete', (e) => {
+      console.log(`child1 收到 ${e.source} 的自定义delete事件`, e.data)
+      const msg = e.data?.msg;
+      opt.classList.remove('empty');
+      opt.innerText = msg || JSON.stringify(e);
+    });
+
+
+    // 普通消息
+    ob.onclick = function () {
+      count++;
+      if (checkReady()) return;
+      const message = 'hello parent ' + count;
+      const sendResult = parent.sendMessage({ msg: message });
+      showSendStatus(sendResult, message);
+      if (sendResult) {
+        console.log(`✓ 消息发送成功: ${message}`);
+      } else {
+        console.error(`✗ 消息发送失败: ${message}`);
       }
+    };
 
-      const parent = new Iframe('game1', {
-        timeout: 5000,
-      });
+    // 自定义事件
+    ob2.onclick = function () {
+      count++;
+      if (checkReady()) return;
+      const message = 'hello emit parent ' + count;
+      const emitResult = parent.emit('handel', { msg: message });
+      showSendStatus(emitResult, message);
+      if (emitResult) {
+        console.log(`✓ 消息发送成功: ${message}`);
+      } else {
+        console.error(`✗ 消息发送失败: ${message}`);
+      }
+    };
 
-      // 使用库的方法获取嵌入状态
-      const embedStatus = parent.getEmbedStatus();
-      console.log('嵌入状态:', embedStatus);
-
-      // 检查通信是否就绪
-      const isReady = parent.isReady();
-      console.log('通信就绪状态:', isReady);
-
-      parent.addWhiteList(['http://127.0.0.1:5501', 'https://www.zhuoson.com']);
-      parent.action('onload', () => {
-        console.log('load');
-      });
-
-      parent.message = (e) => {
-        const msg = e.data?.msg;
-        console.log('child  Received default message', e);
-        console.log('child  Message content:', e.data);
-        console.log('child  Extracted msg:', msg);
-        opt.classList.remove('empty');
-        opt.innerText = msg || JSON.stringify(e);
-      };
-
-      parent.action('handel', (e) => {
-        console.log('child  Received custom message', e);
-      });
-
-      ob.onclick = function () {
-        count++;
-
-        if (!parent.isReady()) {
-          showSendStatus(false, '通信未就绪');
-          console.error('通信未就绪,无法发送消息');
-          return;
-        }
-
-        const message = 'hello parent ' + count;
-
-        const sendResult = parent.sendMessage({ msg: message });
-        const emitResult = parent.emit('handel', { msg: message });
-
-        const success = sendResult && emitResult;
-        showSendStatus(success, message);
-
-        if (success) {
-          console.log(`✓ 消息发送成功: ${message}`);
+    // 确认消息
+    obAck.onclick = async function () {
+      count++;
+      if (checkReady()) return;
+      const message = 'hello parent with ACK ' + count;
+      showSendStatus(true, '发送确认消息中...');
+      try {
+        const result = await parent.sendMessageParentWithAck({ msg: message }, 5000);
+        showSendStatus(result, result ? `收到确认: ${message}` : '确认超时');
+        if (result) {
+          console.warn(`✓ 消息已确认收到: ${message}`);
         } else {
-          console.error(`✗ 消息发送失败: ${message}`);
+          console.error(`✗ 消息确认超时: ${message}`);
         }
-      };
+      } catch (error) {
+        console.error('ACK 错误:', error);
+        showSendStatus(false, 'ACK 错误');
+      }
+    };
 
-      obAck.onclick = async function () {
-        count++;
+    // 删除事件
+    obDelete.onclick = function () {
+      count++;
+      if (checkReady()) return;
+      const message = 'delete event from child1 ' + count;
+      const emitResult = parent.emit('delete', { msg: message });
+      showSendStatus(emitResult, message);
+      if (emitResult) {
+        console.log(`✓ 删除事件发送成功: ${message}`);
+      } else {
+        console.error(`✗ 删除事件发送失败: ${message}`);
+      }
+    };
 
-        if (!parent.isReady()) {
-          showSendStatus(false, '通信未就绪');
-          console.error('通信未就绪,无法发送消息');
-          return;
+    // 发送带确认的自定义事件
+    obEmitAck.onclick = async function () {
+      count++;
+      if (checkReady()) return;
+      const message = 'emit with ACK from child1 to parent ' + count;
+      showSendStatus(true, '发送带确认的自定义事件中...');
+      try {
+        const result = await parent.emitToParentWithAck('handel', { msg: message }, 5000);
+        showSendStatus(result, result ? `收到确认: ${message}` : '确认超时');
+        if (result) {
+          console.log(`✓ 自定义事件已确认收到: ${message}`);
+        } else {
+          console.error(`✗ 自定义事件确认超时: ${message}`);
         }
+      } catch (error) {
+        console.error('Emit ACK 错误:', error);
+        showSendStatus(false, 'Emit ACK 错误');
+      }
+    };
 
-        const message = 'hello parent with ACK ' + count;
-        showSendStatus(true, '发送确认消息中...');
+    // 页面检测 
+    window.addEventListener('load', () => {
+      const status = parent.getEmbedStatus();
+      const embedStatusEl = document.getElementById('embedStatus');
+      const connectionStatus = document.getElementById('connectionStatus');
 
-        try {
-          const result = await parent.sendMessageParentWithAck({ msg: message }, 5000);
-          showSendStatus(result, result ? `收到确认: ${message}` : '确认超时');
-
-          if (result) {
-            console.warn(`✓ 消息已确认收到: ${message}`);
-          } else {
-            console.error(`✗ 消息确认超时: ${message}`);
-          }
-        } catch (error) {
-          console.error('ACK 错误:', error);
-          showSendStatus(false, 'ACK 错误');
-        }
-      };
-
-      window.addEventListener('load', () => {
-        const status = parent.getEmbedStatus();
-        const embedStatusEl = document.getElementById('embedStatus');
-        const connectionStatus = document.getElementById('connectionStatus');
-
-        if (status.isEmbedded) {
-          embedStatusEl.className = 'embed-status embedded';
-          embedStatusEl.innerHTML = `
+      if (status.isEmbedded) {
+        embedStatusEl.className = 'embed-status embedded';
+        embedStatusEl.innerHTML = `
             <span style="font-weight: 600;">当前状态:</span>
             内嵌在 iframe 中
             <span style="opacity: 0.6;">(可通过 parent 通信)</span>
           `;
-          connectionStatus.innerHTML = status.canCommunicate ? '已连接到父页面' : '无法通信';
-        } else {
-          embedStatusEl.className = 'embed-status standalone';
-          embedStatusEl.innerHTML = `
+        connectionStatus.innerHTML = status.canCommunicate ? '已连接到父页面' : '无法通信';
+      } else {
+        embedStatusEl.className = 'embed-status standalone';
+        embedStatusEl.innerHTML = `
             <span style="font-weight: 600;">当前状态:</span>
             独立页面
             <span style="opacity: 0.6;">(无法使用 iframe 通信)</span>
           `;
-          connectionStatus.innerHTML = '未检测到父页面';
-          connectionStatus.style.color = '#f59e0b';
-          connectionStatus.style.background = '#fff7ed';
-        }
-      });
-    </script>
-  </body>
+        connectionStatus.innerHTML = '未检测到父页面';
+        connectionStatus.style.color = '#f59e0b';
+        connectionStatus.style.background = '#fff7ed';
+      }
+    });
+
+
+    // 工具函数
+    function checkReady() {
+      if (!parent.isReady()) {
+        showSendStatus(false, '通信未就绪');
+        console.error('通信未就绪,无法发送消息');
+        return true;
+      }
+      return false
+    }
+
+
+    /**
+     * 显示发送状态
+     * @param {boolean} success 是否成功
+     * @param {string} message 消息内容
+     */
+    function showSendStatus(success, message) {
+      const sendStatus = document.getElementById('sendStatus');
+      sendStatus.classList.add('show');
+      sendStatus.classList.remove('error');
+
+      if (success) {
+        sendStatus.textContent = `✓ 发送成功: ${message}`;
+        sendStatus.classList.remove('error');
+      } else {
+        sendStatus.textContent = `✗ 发送失败: ${message}`;
+        sendStatus.classList.add('error');
+      }
+
+      setTimeout(() => {
+        sendStatus.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+</body>
+
 </html>
