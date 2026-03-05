@@ -39,11 +39,11 @@ npm i iframe-js
 适用于现代浏览器的原生 HTML 项目：
 
 ```sh
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.1.0/index.min.js
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.1.0/ejs/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.0/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.0/ejs/index.min.js
 
 <script type="module">
-  import Iframe from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.1.0/ejs/index.min.js';
+  import Iframe from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.0/ejs/index.min.js';
 </script>
 ```
 
