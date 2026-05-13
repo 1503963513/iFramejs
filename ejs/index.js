@@ -450,9 +450,10 @@ class Iframe {
     removeWhiteList(url) {
         if (Array.isArray(url)) {
             const validUrls = url.filter((u) => u && typeof u === 'string');
-            this.Whitelist = [...this.Whitelist, ...validUrls];
+            this.Whitelist = this.Whitelist.filter((item) => !validUrls.includes(item));
         } else if (url && typeof url === 'string') {
-            this.Whitelist.push(url);
+            const index = this.Whitelist.indexOf(url);
+            if (index !== -1) this.Whitelist.splice(index, 1);
         }
         this._updateOriginCache();
     }
@@ -814,7 +815,16 @@ class Iframe {
         console.info('[Iframe-js] Iframe instance destroyed');
     }
     BlockingLog() {
+        if (!this._originalLog) {
+            this._originalLog = console.log;
+        }
         console.log = function () {};
+    }
+    restoreLog() {
+        if (this._originalLog) {
+            console.log = this._originalLog;
+            this._originalLog = null;
+        }
     }
 }
 
