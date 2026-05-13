@@ -2,6 +2,8 @@
 
 **iframe-js** 是一款轻量、安全、优雅的跨域 iframe 通信库。完美解决原生 `postMessage` 来源不可控、回调地狱、缺乏送达确认等痛点。
 
+> **v2.3.0** 新增握手协议、setState 微任务批处理、消息帧版本号、同域检测缓存等架构级改进。
+
 ## 🎮 在线体验 (Live Demo)
 
 👉 **[点击这里体验：基础通信与 Promise ACK 确认机制 Demo](https://resource.zhuoson.com/demo/iframe-demo/index.html)**
@@ -17,20 +19,27 @@
 ## ✨ 核心特性
 
 - **RPC 远程过程调用**：像调用本地异步函数一样调用跨域 iframe 中的函数，完美获取返回值。
-
 - **全局状态共享 (State Sync)**：内置跨域状态机，支持多端状态增量/全量实时同步（类似微缩版 Pinia）。
-
 - **自动高度适应 (Auto Resize)**：子页面基于 `ResizeObserver` 智能探测 DOM 变化，父页面 iframe 标签高度自动无缝伸缩，彻底告别双滚动条。
-
 - **真正的多实例隔离**：完美支持在同一父页面中嵌入多个独立 iframe，底层自动进行环境隔离与引用校验，消息与状态互不干扰。
-
 - **优雅的事件驱动**：告别冗长的 `if-else`，支持类似 EventBus 的 `action/emit` 自定义事件分发。
-
 - **可靠的 ACK 确认机制**：支持带超时控制的双向消息/事件确认（Promise API）。无视跨域与重定向引发的引用漂移，确保回执 100% 准确送达；同域下更支持异步等待执行结果。
-
-- **内置离线消息队列**：无惧 iframe 尚未加载完成，未就绪的消息将自动进入队列，等待 `isReady` 放行或 `onload` 后自动按序发送。
-
+- **内置离线消息队列**：无惧 iframe 尚未加载完成，未就绪的消息将自动进入队列，等待握手成功后自动按序发送。
 - **严苛的安全策略**：内置严格的 Origin 白名单校验与跨域 DOM 异常防御，彻底拦截非法来源消息与脚本注入污染。
+- **可靠的握手协议**：子页面初始化完成后主动发送 handshake，父页面确认子页面 JS 就绪后再刷新消息队列，彻底解决时序丢包问题。
+
+---
+
+## 🆕 v2.3.0 更新日志
+
+| 改进项 | 说明 |
+|--------|------|
+| **握手协议** | 子页面 `new Iframe('name')` 后自动发送 handshake，父页面收到后才视为就绪，替代不可靠的 `onload` 时序 |
+| **setState 批处理** | 同一同步帧内多次 `setState()` 自动合并为单条 `postMessage`，减少跨域通信频率 |
+| **消息帧版本号** | 所有出站消息携带 `version: '2.3.0'` 字段，为未来协议升级提供迁移依据 |
+| **同域检测缓存** | `isSameDomain` 结果首次计算后缓存，消除每次 `emit`/`action` 时的重复 `new URL()` 开销 |
+| **removeWhiteList 修复** | 修复复制粘贴导致该方法实际执行添加而非移除的 Bug |
+| **BlockingLog 修复** | 不再全局污染 `console.log`，新增 `restoreLog()` 可恢复 |
 
 ---
 
@@ -49,11 +58,11 @@ npm i iframe-js
 适用于现代浏览器的原生 HTML 项目：
 
 ```sh
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.1/index.min.js
-https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.1/ejs/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.3.0/index.min.js
+https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.3.0/ejs/index.min.js
 
 <script type="module">
-  import Iframe from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.2.1/ejs/index.min.js';
+  import Iframe from 'https://cdn.jsdelivr.net/gh/1503963513/iFramejs@v2.3.0/ejs/index.min.js';
 </script>
 ```
 
@@ -153,13 +162,9 @@ childApp.action('handel', (e) => {
 ## 基础通信 API
 
 - **`sendMessage(payload: any, options?: { origin?: string })`** 发送普通消息。`payload` 为任意可序列化的数据。返回 `string` (内部生成的消息 ID) 或 `false`。
-
 - **`message`** (属性) 用于接收普通消息的回调函数覆盖。例：`iframe.message = (e) => { console.log(e.data) }`。
-
 - **`action(name: string, callback: Function)`** 监听自定义事件。`callback` 会接收到一个对象 `{ source: string, data: any }`。
-
 - **`removeAction(name: string)`** 移除指定的自定义事件监听器。
-
 - **`emit(event: string, payload?: any)`** 触发对方的自定义事件。返回 `boolean` 表示是否调用成功。
 
 ## 高级确认机制 (ACK API)
@@ -169,20 +174,18 @@ childApp.action('handel', (e) => {
 **父页面调用:**
 
 - `sendMessageWithAckToChild(payload: any, timeout?: number)`
-
 - `emitToChildWithAck(event: string, payload?: any, timeout?: number)`
 
 **子页面调用:**
 
 - `sendMessageParentWithAck(payload: any, timeout?: number)`
-
 - `emitToParentWithAck(event: string, payload?: any, timeout?: number)`
 
 ## 状态与生命周期
 
-- **`isReady(): boolean`** 检查通信是否就绪（DOM是否加载完、白名单是否配置且上下文合法）。未就绪时发出的 ACK 消息会自动进入内部队列。
-
+- **`isReady(): boolean`** 检查通信是否就绪。父角色需 iframe 加载完成 **且** 收到子页面握手消息；子角色需父窗口可达。未就绪时发出的消息会自动进入内部队列。
 - **`destroy()`** 彻底销毁实例。主动阻断所有进行中的 Promise 队列，清理所有事件监听器和内存占用（强烈推荐在 Vue/React 的 `onUnmounted` / `useEffect` 清理函数中调用）。
+- **`restoreLog()`** 恢复被 `BlockingLog()` 屏蔽的 `console.log`。
 
 ## 工具类 `IframeUtils` (按需引入)
 
@@ -222,11 +225,8 @@ iframe.addWhiteList('*');
 ## 白名单动态管理 API
 
 - `addWhiteList(url: string | string[])`: 动态添加信任的 Origin。
-
 - `removeWhiteList(url: string | string[])`: 移除已存在的 Origin。
-
 - `updateWhite(oldUrl: string, newUrl: string)`: 更新指定的白名单记录。
-
 - `getWhiteList(): string[]`: 获取当前实例生效的所有白名单列表。
 
 ---
@@ -235,7 +235,7 @@ iframe.addWhiteList('*');
 
 ## 结合 Promise 的双向 ACK 与队列防丢机制
 
-发送方在发出消息后，内部会挂起一个 Promise 等待对方的回执。**哪怕对方 iframe 尚未加载完毕**，消息也会安全地暂存在本地队列中，待双方握手成功后自动发出，彻底消灭时序引发的丢包问题。
+发送方在发出消息后，内部会挂起一个 Promise 等待对方的回执。**哪怕对方 iframe 尚未加载完毕**，消息也会安全地暂存在本地队列中，待子页面完成握手后自动发出，彻底消灭时序引发的丢包问题。
 
 ```JavaScript
 
@@ -287,7 +287,7 @@ document.getElementById('btn').onclick = async () => {
 
 ### 2. 状态共享同步 (State Sync)
 
-极其适合“全局深色模式切换”、“多语言包切换”或“全局用户信息共享”场景。
+极其适合”全局深色模式切换”、”多语言包切换”或”全局用户信息共享”场景。同一帧内多次 `setState` 会自动批处理为单条消息。
 
 **父页面 (初始化/修改状态):**
 
