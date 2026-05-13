@@ -6,6 +6,7 @@ export interface IframeMessageEvent<T = any> {
     data: T;
     id: string;
     timestamp: number;
+    version?: string;
 }
 
 /**
@@ -138,4 +139,8 @@ export default class Iframe {
     /** 彻底销毁实例，清理所有资源 */
     destroy(): void;
     BlockingLog(): void;
+    restoreLog(): void;
+
+    /** 获取远端协议版本（握手后可用） */
+    readonly _remoteVersion?: string;
 }

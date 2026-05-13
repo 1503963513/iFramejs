@@ -53,6 +53,10 @@ class Iframe {
         this._iframeLoaded = false;
         this._autoResizeEnabled = false;
         this._resizeObserver = null;
+        this._isHandshaked = false;
+        this._pendingStateBatch = null;
+        this._cachedSameDomain = undefined;
+        this._protocolVersion = '2.3.0';
 
         switch (true) {
             case !!options?.container:
@@ -81,7 +85,7 @@ class Iframe {
                         originalOnload.call(container);
                     }
                     this.onload();
-                    this._flushMessageQueue();
+                    this._tryFlushAfterHandshake();
                 };
 
                 this.iframeInit();
@@ -107,7 +111,7 @@ class Iframe {
                         originalNodeOnload.call(options);
                     }
                     this.onload();
-                    this._flushMessageQueue();
+                    this._tryFlushAfterHandshake();
                 };
 
                 this.iframeInit();
@@ -161,6 +165,7 @@ class Iframe {
                 data: payload,
                 id: Date.now() + Math.random().toString(36),
                 timestamp: Date.now(),
+                version: this._protocolVersion,
             };
 
             if (options.type === 1) {
@@ -236,6 +241,38 @@ class Iframe {
         this.emit = this.sendEmitEventChild;
         this.iframe = window.parent;
         this.openEventListener();
+        this._isHandshaked = true;
+        queueMicrotask(() => this._sendHandshake());
+    }
+
+    _sendHandshake() {
+        if (this._isDestroyed) return;
+        try {
+            window.parent.postMessage(
+                {
+                    source: 'Iframe-Child-Screen' + this.name,
+                    isHandshake: true,
+                    version: this._protocolVersion,
+                    timestamp: Date.now(),
+                },
+                this.postOrigin || '*',
+            );
+        } catch (e) {
+            console.error('[Iframe-js] Handshake send failed:', e);
+        }
+    }
+
+    _isSameDomainCached() {
+        if (this._cachedSameDomain === undefined && this.url) {
+            this._cachedSameDomain = IframeUtils.isSameDomain(window.location.href, this.url);
+        }
+        return this._cachedSameDomain || false;
+    }
+
+    _tryFlushAfterHandshake() {
+        if (this._isHandshaked) {
+            this._flushMessageQueue();
+        }
     }
 
     openEventListener() {
@@ -243,6 +280,16 @@ class Iframe {
 
         this._messageListener = (e) => {
             if (this._isDestroyed) return;
+
+            if (e.data?.isHandshake && !this._isHandshaked) {
+                if (this.iframe && e.source !== this.iframe) return;
+                if (!e.data.source?.includes('Iframe-Child-Screen')) return;
+                this._isHandshaked = true;
+                this._remoteVersion = e.data.version || 'unknown';
+                console.info(`[Iframe-js] Handshake received, remote version: ${this._remoteVersion}`);
+                this._tryFlushAfterHandshake();
+                return;
+            }
 
             if (e.data?.ack && e.data?.messageId && this._pendingMessages.has(e.data.messageId)) {
                 const pending = this._pendingMessages.get(e.data.messageId);
@@ -439,6 +486,10 @@ class Iframe {
                 console.warn('[Iframe-js] isReady: parent waiting, iframe not loaded yet');
                 return false;
             }
+            if (!this._isHandshaked) {
+                console.warn('[Iframe-js] isReady: waiting for child handshake');
+                return false;
+            }
             if (!this.iframe) {
                 console.warn('[Iframe-js] isReady: parent iframe target is missing');
                 return false;
@@ -505,8 +556,9 @@ class Iframe {
                     isRpcReq: true,
                     methodName: methodName,
                     callId: callId,
-                    params: params, // 携带参数
+                    params: params,
                     timestamp: Date.now(),
+                    version: this._protocolVersion,
                 };
 
                 const targetOrigin = this.postOrigin || '*';
@@ -533,7 +585,7 @@ class Iframe {
     emitToChildWithAck(event, payload = {}, timeout = this._defaultTimeout) {
         if (this._isDestroyed) return Promise.resolve(false);
 
-        if (IframeUtils.isSameDomain(window.location.href, this.url)) {
+        if (this._isSameDomainCached()) {
             try {
                 const handler = this.iframe[EVENT_HEAD_PREFIX + event];
                 if (typeof handler === 'function') {
@@ -578,7 +630,7 @@ class Iframe {
             return false;
         }
 
-        if (IframeUtils.isSameDomain(window.location.href, this.url)) {
+        if (this._isSameDomainCached()) {
             try {
                 const handler = this.iframe[EVENT_HEAD_PREFIX + event];
                 if (handler && typeof handler === 'function') {
@@ -646,7 +698,7 @@ class Iframe {
 
         this._eventHandlers.set(eventKey, fun);
 
-        if (IframeUtils.isSameDomain(window.location.href, this.url)) {
+        if (this._isSameDomainCached()) {
             if (this.iframe === window.parent) {
                 window[eventKey] = fun;
             }
@@ -684,7 +736,16 @@ class Iframe {
         });
 
         if (this.isReady()) {
-            this._sendStateSync(partialState);
+            if (!this._pendingStateBatch) {
+                this._pendingStateBatch = { ...partialState };
+                queueMicrotask(() => {
+                    if (this._isDestroyed || !this._pendingStateBatch) return;
+                    this._sendStateSync(this._pendingStateBatch);
+                    this._pendingStateBatch = null;
+                });
+            } else {
+                Object.assign(this._pendingStateBatch, partialState);
+            }
         }
     }
 
@@ -697,6 +758,7 @@ class Iframe {
                 isStateSync: true,
                 state: partialState,
                 timestamp: Date.now(),
+                version: this._protocolVersion,
             };
             const targetOrigin = this.postOrigin || '*';
             targetWindow.postMessage(message, targetOrigin);
@@ -737,6 +799,7 @@ class Iframe {
                     isAutoResize: true,
                     height: height + offset,
                     timestamp: Date.now(),
+                    version: this._protocolVersion,
                 };
                 window.parent.postMessage(message, this.postOrigin || '*');
             } catch (e) {
@@ -761,7 +824,7 @@ class Iframe {
 
     removeAction(name) {
         const eventKey = EVENT_HEAD_PREFIX + name;
-        if (IframeUtils.isSameDomain(window.location.href, this.url) && this.iframe === window.parent) {
+        if (this._isSameDomainCached() && this.iframe === window.parent) {
             delete window[eventKey];
         }
         this._customMap.delete(eventKey);
@@ -788,6 +851,7 @@ class Iframe {
         });
         this._pendingMessages.clear();
         this._messageQueue = [];
+        this._pendingStateBatch = null;
 
         if (this._messageListener) {
             window.removeEventListener('message', this._messageListener, false);
@@ -795,7 +859,7 @@ class Iframe {
         }
 
         this._eventHandlers.forEach((_, key) => {
-            if (IframeUtils.isSameDomain(window.location.href, this.url)) {
+            if (this._isSameDomainCached()) {
                 delete window[key];
             }
             this._customMap.delete(key);
@@ -803,6 +867,7 @@ class Iframe {
         this._eventHandlers.clear();
 
         this.iframe = null;
+        this._cachedSameDomain = undefined;
         this.doc = null;
         this.message = null;
         this.sendMessage = null;
